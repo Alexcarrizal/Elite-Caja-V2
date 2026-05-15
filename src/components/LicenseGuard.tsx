@@ -6,6 +6,8 @@ import { es } from 'date-fns/locale';
 import { auth } from '../services/firebase';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { toast } from 'sonner';
+import { motion } from 'motion/react';
+import Logo from './Logo';
 
 export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { license, activateTrial, activateLicense, checkLicense, firebaseUser, theme, toggleTheme } = useStore();
@@ -87,7 +89,12 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden relative">
+      <motion.div 
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden relative"
+      >
         <button
           onClick={toggleTheme}
           className="absolute top-4 right-4 p-2 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -96,13 +103,11 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
           {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>
         <div className="p-8">
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-              <Key className="w-8 h-8 text-blue-600" />
-            </div>
+          <div className="flex justify-center mb-8 mt-2">
+            <Logo className="scale-110 transform origin-center" />
           </div>
 
-          <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2">
+          <h2 className="text-xl font-bold text-center text-gray-900 dark:text-white mb-2">
             Activación del Sistema
           </h2>
           <p className="text-center text-gray-500 dark:text-gray-400 mb-8 flex text-sm">
@@ -203,7 +208,7 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
