@@ -1,0 +1,5 @@
+{
+  "name": "Punto de Venta V.2",
+  "description": "Aplicación web moderna de Punto de Venta (POS) adaptable a cualquier tipo de negocio. Incluye inventario, caja, reportes y configuración.",
+  "requestFramePermissions": []
+}
