@@ -64,7 +64,9 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
       login('1234');
     } catch (err: any) {
       console.error(err);
-      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+      if (err.code === 'auth/unauthorized-domain') {
+        toast.error(`Dominio no autorizado. Añade ${window.location.hostname} a dominios autorizados en Authentication -> Settings en Firebase.`, { duration: 8000 });
+      } else if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
          toast.error(`Error (${err.code}): ${err.message}`);
       } else {
          toast.error(`Aviso: Ventana de login cerrada (${err.code})`);
