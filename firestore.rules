@@ -2,105 +2,35 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Phase 0. Global Safety Net
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Primitives
-    function isSignedIn() { return request.auth != null; }
-    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
-    function incoming() { return request.resource.data; }
-    function existing() { return resource.data; }
-    
-    // Store Owner Gate: storeId MUST be the uid of the logged in user
     function isStoreOwner(storeId) {
-      return isSignedIn() && storeId == request.auth.uid;
+      return request.auth != null && storeId == request.auth.uid;
     }
-
-    // Validation Helpers
-    function isValidBusinessSettings(data) {
-      return data.keys().hasAll(['name', 'ownerId']) &&
-             data.name is string && data.name.size() <= 100 &&
-             data.ownerId == request.auth.uid;
-    }
-
-    function isValidProduct(data) {
-      return data.keys().hasAll(['name', 'salePrice', 'tracksInventory']) &&
-             data.name is string && data.name.size() <= 200 &&
-             data.salePrice is number && data.salePrice >= 0 &&
-             data.tracksInventory is bool;
-    }
-
-    function isValidSale(data) {
-      return data.keys().hasAll(['total', 'paymentMethod', 'items', 'date']) &&
-             data.total is number && data.total >= 0 &&
-             data.paymentMethod is string && data.paymentMethod.size() <= 50 &&
-             data.items is list && data.items.size() <= 500 &&
-             data.date is string && data.date.size() <= 50;
-    }
-
-    function isValidInventoryMovement(data) {
-      return data.keys().hasAll(['productId', 'type', 'quantity', 'date']) &&
-             data.productId is string && data.productId.size() <= 128 &&
-             data.type is string && data.type.matches('^(entrada|salida|ajuste|venta)$') &&
-             data.quantity is number &&
-             data.date is string && data.date.size() <= 50;
-    }
-    
-    function isValidCashRegister(data) {
-      return data.keys().hasAll(['openedAt', 'initialAmount', 'status']) &&
-             data.openedAt is string && data.openedAt.size() <= 50 &&
-             data.initialAmount is number && data.initialAmount >= 0 &&
-             data.status is string && data.status.matches('^(open|closed)$');
-    }
-
-    function isValidCustomer(data) {
-      return data.keys().hasAll(['name']) &&
-             data.name is string && data.name.size() <= 150;
-    }
-
-    // --- Collections ---
 
     match /stores/{storeId} {
-      allow get: if isStoreOwner(storeId);
-      allow create: if isStoreOwner(storeId) && isValidId(storeId) && isValidBusinessSettings(incoming()) && incoming().keys().hasAll(['name', 'ownerId']) && incoming().keys().size() <= 20;
-      allow update: if isStoreOwner(storeId) && isValidId(storeId) && isValidBusinessSettings(incoming());
+      allow read, write: if isStoreOwner(storeId);
       
       match /products/{productId} {
-        allow list, get: if isStoreOwner(storeId);
-        allow create: if isStoreOwner(storeId) && isValidId(productId) && isValidProduct(incoming());
-        allow update: if isStoreOwner(storeId) && isValidId(productId) && isValidProduct(incoming());
-        allow delete: if isStoreOwner(storeId) && isValidId(productId);
+        allow read, write: if isStoreOwner(storeId);
       }
       
       match /sales/{saleId} {
-        allow list, get: if isStoreOwner(storeId);
-        allow create: if isStoreOwner(storeId) && isValidId(saleId) && isValidSale(incoming());
-        // Sales are generally immutable, but we can allow soft-deletion or updates if needed.
-        allow update: if isStoreOwner(storeId) && isValidId(saleId) && isValidSale(incoming());
-        allow delete: if isStoreOwner(storeId) && isValidId(saleId);
+        allow read, write: if isStoreOwner(storeId);
       }
       
       match /inventoryMovements/{movementId} {
-        allow list, get: if isStoreOwner(storeId);
-        allow create: if isStoreOwner(storeId) && isValidId(movementId) && isValidInventoryMovement(incoming());
-        allow update: if isStoreOwner(storeId) && isValidId(movementId) && isValidInventoryMovement(incoming());
-        allow delete: if isStoreOwner(storeId) && isValidId(movementId);
+        allow read, write: if isStoreOwner(storeId);
       }
       
       match /cashRegisters/{registerId} {
-        allow list, get: if isStoreOwner(storeId);
-        allow create: if isStoreOwner(storeId) && isValidId(registerId) && isValidCashRegister(incoming());
-        allow update: if isStoreOwner(storeId) && isValidId(registerId) && isValidCashRegister(incoming());
-        allow delete: if isStoreOwner(storeId) && isValidId(registerId);
+        allow read, write: if isStoreOwner(storeId);
       }
 
       match /customers/{customerId} {
-        allow list, get: if isStoreOwner(storeId);
-        allow create: if isStoreOwner(storeId) && isValidId(customerId) && isValidCustomer(incoming());
-        allow update: if isStoreOwner(storeId) && isValidId(customerId) && isValidCustomer(incoming());
-        allow delete: if isStoreOwner(storeId) && isValidId(customerId);
+        allow read, write: if isStoreOwner(storeId);
       }
     }
   }

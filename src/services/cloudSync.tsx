@@ -1,19 +1,55 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { collection, doc, setDoc, deleteDoc, getDocs, getDoc, writeBatch } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import { toast } from 'sonner';
 
-/**
- * Helper to handle errors securely
- */
-const handleFirestoreError = (error: unknown, operationType: string, path: string | null) => {
-  const errInfo = {
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType | string;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+
+const handleFirestoreError = (error: unknown, operationType: OperationType | string, path: string | null) => {
+  const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
     operationType,
     path
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
+  toast.error(errInfo.error);
+  throw new Error(JSON.stringify(errInfo));
 };
 
 const syncItem = async (uid: string, collectionName: string, item: any) => {
