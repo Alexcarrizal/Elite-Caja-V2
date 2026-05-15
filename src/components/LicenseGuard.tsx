@@ -93,9 +93,15 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden relative"
+        className="max-w-md w-full relative group"
       >
-        <button
+        <motion.div 
+          animate={{ opacity: [0.3, 0.8, 0.3] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -inset-[1px] bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 rounded-[17px] opacity-75 blur-[1px]"
+        />
+        <div className="relative w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+          <button
           onClick={toggleTheme}
           className="absolute top-4 right-4 p-2 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
           aria-label="Toggle theme"
@@ -207,6 +213,7 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
               </div>
             </div>
           </div>
+        </div>
         </div>
       </motion.div>
     </div>
