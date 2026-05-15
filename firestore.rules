@@ -20,20 +20,20 @@ service cloud.firestore {
 
     // Validation Helpers
     function isValidBusinessSettings(data) {
-      return data.keys().hasAny(['name', 'ownerId']) &&
+      return data.keys().hasAll(['name', 'ownerId']) &&
              data.name is string && data.name.size() <= 100 &&
              data.ownerId == request.auth.uid;
     }
 
     function isValidProduct(data) {
-      return data.keys().hasAny(['name', 'price', 'tracksInventory']) &&
+      return data.keys().hasAll(['name', 'salePrice', 'tracksInventory']) &&
              data.name is string && data.name.size() <= 200 &&
-             data.price is number && data.price >= 0 &&
+             data.salePrice is number && data.salePrice >= 0 &&
              data.tracksInventory is bool;
     }
 
     function isValidSale(data) {
-      return data.keys().hasAny(['total', 'paymentMethod', 'items', 'date']) &&
+      return data.keys().hasAll(['total', 'paymentMethod', 'items', 'date']) &&
              data.total is number && data.total >= 0 &&
              data.paymentMethod is string && data.paymentMethod.size() <= 50 &&
              data.items is list && data.items.size() <= 500 &&
@@ -41,7 +41,7 @@ service cloud.firestore {
     }
 
     function isValidInventoryMovement(data) {
-      return data.keys().hasAny(['productId', 'type', 'quantity', 'date']) &&
+      return data.keys().hasAll(['productId', 'type', 'quantity', 'date']) &&
              data.productId is string && data.productId.size() <= 128 &&
              data.type is string && data.type.matches('^(entrada|salida|ajuste|venta)$') &&
              data.quantity is number &&
@@ -49,14 +49,14 @@ service cloud.firestore {
     }
     
     function isValidCashRegister(data) {
-      return data.keys().hasAny(['openedAt', 'initialAmount', 'status']) &&
+      return data.keys().hasAll(['openedAt', 'initialAmount', 'status']) &&
              data.openedAt is string && data.openedAt.size() <= 50 &&
              data.initialAmount is number && data.initialAmount >= 0 &&
              data.status is string && data.status.matches('^(open|closed)$');
     }
 
     function isValidCustomer(data) {
-      return data.keys().hasAny(['name']) &&
+      return data.keys().hasAll(['name']) &&
              data.name is string && data.name.size() <= 150;
     }
 
