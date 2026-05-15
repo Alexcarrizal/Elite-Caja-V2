@@ -10,7 +10,7 @@ import { motion } from 'motion/react';
 import Logo from './Logo';
 
 export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { license, activateTrial, activateLicense, checkLicense, firebaseUser, theme, toggleTheme } = useStore();
+  const { license, activateTrial, activateLicense, checkLicense, firebaseUser, theme, toggleTheme, login } = useStore();
 
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -32,6 +32,7 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
     if (result.success) {
       setSuccess(result.message);
       setPin('');
+      login('1234');
     } else {
       setError(result.message);
     }
@@ -44,6 +45,7 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
     if (result.success) {
       setSuccess(result.message);
       setPin('');
+      login('1234');
     } else {
       setError(result.message);
     }
@@ -55,6 +57,11 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       toast.success('Sesión en la nube iniciada correctamente');
+      
+      if (license.status === 'none') {
+        activateTrial();
+      }
+      login('1234');
     } catch (err: any) {
       console.error(err);
       if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {

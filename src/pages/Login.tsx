@@ -40,6 +40,12 @@ export default function Login() {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       toast.success('Sesión en la nube iniciada correctamente');
+      
+      // Auto-login to bypass POS screen and go into app
+      if (login('1234')) {
+        const hasOpenRegister = (useStore.getState().cashRegisters || []).some(r => r.status === 'open');
+        navigate(hasOpenRegister ? '/' : '/cash-register');
+      }
     } catch (err: any) {
       console.error(err);
       if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
