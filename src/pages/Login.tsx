@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { Lock, Cloud, Key, FileWarning } from 'lucide-react';
+import { Lock, Cloud, Key, FileWarning, Sun, Moon } from 'lucide-react';
 import Logo from '../components/Logo';
 import { auth } from '../services/firebase';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
@@ -13,7 +13,9 @@ export default function Login() {
   const [isCloudLoading, setIsCloudLoading] = useState(false);
   const { 
     login,
-    firebaseUser 
+    firebaseUser,
+    theme,
+    toggleTheme
   } = useStore();
   const navigate = useNavigate();
 
@@ -50,6 +52,14 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors duration-200">
+      <button
+        onClick={toggleTheme}
+        className="absolute top-4 right-4 p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+        aria-label="Toggle theme"
+      >
+        {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+      </button>
+
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center mb-4">
           <Logo className="scale-125 transform origin-center" />
