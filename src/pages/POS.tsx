@@ -144,7 +144,7 @@ export default function POS() {
       return;
     }
 
-    const saleData = {
+    const baseSaleData = {
       id: Math.random().toString(36).substr(2, 9),
       date: new Date().toISOString(),
       items: [...cart],
@@ -152,16 +152,22 @@ export default function POS() {
       tax,
       total,
       paymentMethod,
-      cashReceived: paymentMethod === 'Efectivo' ? actualCashReceived : undefined,
-      change: paymentMethod === 'Efectivo' ? change : undefined,
-      commission: commissionAmount,
-      commissionPayer,
-      term: commissionTerm,
-      customerId: selectedCustomerId !== 'mostrador' ? selectedCustomerId : undefined,
-      customerName: selectedCustomerId !== 'mostrador' ? customers.find(c => c.id === selectedCustomerId)?.name : undefined,
     };
 
-    processSale(saleData);
+    const customer = selectedCustomerId !== 'mostrador' ? customers.find(c => c.id === selectedCustomerId) : null;
+
+    // Eliminate undefined to avoid Firestore errors
+    const saleData = {
+      ...baseSaleData,
+      ...(paymentMethod === 'Efectivo' && { cashReceived: actualCashReceived, change }),
+      ...(commissionAmount > 0 && { commission: commissionAmount, commissionPayer, term: commissionTerm }),
+      ...(customer && { 
+        customerId: customer.id,
+        customerName: customer.name 
+      })
+    };
+
+    processSale(saleData as any);
     
     setLastSale(saleData);
     setShowSuccessModal(true);

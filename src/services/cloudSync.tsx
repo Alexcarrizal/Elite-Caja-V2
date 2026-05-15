@@ -54,7 +54,9 @@ const handleFirestoreError = (error: unknown, operationType: OperationType | str
 
 const syncItem = async (uid: string, collectionName: string, item: any) => {
   try {
-    await setDoc(doc(db, 'stores', uid, collectionName, item.id), item);
+    // Strip undefined values which Firebase rejects
+    const cleanItem = JSON.parse(JSON.stringify(item));
+    await setDoc(doc(db, 'stores', uid, collectionName, cleanItem.id), cleanItem);
   } catch (error) {
     handleFirestoreError(error, 'write', `stores/${uid}/${collectionName}/${item.id}`);
   }
@@ -70,7 +72,8 @@ const deleteItem = async (uid: string, collectionName: string, itemId: string) =
 
 const syncSettings = async (uid: string, settings: any) => {
   try {
-    await setDoc(doc(db, 'stores', uid), { ...settings, ownerId: uid });
+    const cleanSettings = JSON.parse(JSON.stringify({ ...settings, ownerId: uid }));
+    await setDoc(doc(db, 'stores', uid), cleanSettings);
   } catch (error) {
     handleFirestoreError(error, 'write', `stores/${uid}`);
   }
@@ -170,11 +173,12 @@ export const CloudSyncProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       // Settings & License
       if (state.settings !== prev.settings || state.license !== prev.license) {
-        setDoc(doc(db, 'stores', uid), { 
+        const cleanSettings = JSON.parse(JSON.stringify({ 
           ...state.settings, 
           license: state.license,
           ownerId: uid 
-        }).catch((e) => handleFirestoreError(e, 'write', `stores/${uid}`));
+        }));
+        setDoc(doc(db, 'stores', uid), cleanSettings).catch((e) => handleFirestoreError(e, 'write', `stores/${uid}`));
       }
 
       // Collections diffing helper
