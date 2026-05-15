@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
-import { Key, ShieldAlert, Clock, CheckCircle2, Monitor, Cloud, Sun, Moon } from 'lucide-react';
+import { Key, ShieldAlert, Clock, CheckCircle2, Monitor, Cloud, Sun, Moon, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { auth } from '../services/firebase';
@@ -113,13 +113,13 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
             <Logo className="scale-110 transform origin-center" />
           </div>
 
-          <h2 className="text-xl font-bold text-center text-gray-900 dark:text-white mb-2">
-            Activación del Sistema
+          <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2">
+            Bienvenido a Elite Caja
           </h2>
-          <p className="text-center text-gray-500 dark:text-gray-400 mb-8 flex text-sm">
+          <p className="text-center text-gray-500 dark:text-gray-400 mb-8 text-sm leading-relaxed px-2">
             {license.status === 'expired' 
               ? 'Tu periodo de prueba ha expirado. Ingresa un PIN Maestro para continuar.' 
-              : 'Puedes iniciar una prueba de 5 días gratis o introducir un PIN Maestro para activación.'}
+              : 'El sistema de venta más potente. Activa una prueba de 5 días gratis o ingresa tu PIN Maestro.'}
           </p>
 
           <div className="mb-6">
@@ -206,12 +206,19 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
           </div>
 
           <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
-            <div className="flex items-center justify-center text-xs text-gray-400 font-medium">
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(license.machineId);
+                toast.success('ID de equipo copiado al portapapeles');
+              }}
+              className="w-full flex items-center justify-center text-xs text-gray-500 font-medium bg-gray-50 dark:bg-gray-700/50 p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+            >
               <div className="flex items-center gap-2 uppercase tracking-wider">
                 <Monitor className="w-3 h-3" />
-                ID de Equipo: {license.machineId}
+                ID de Equipo: <span className="font-mono text-gray-900 dark:text-gray-200">{license.machineId}</span>
+                <Copy className="w-3 h-3 ml-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
               </div>
-            </div>
+            </button>
           </div>
         </div>
         </div>
