@@ -93,7 +93,6 @@ export default function Dashboard() {
     if (lowStockProducts.length > 0) {
       toast.error(`¡Atención! ${lowStockProducts.length} productos con stock bajo`, {
         description: 'Es necesario reabastecer el inventario.',
-        duration: Infinity,
         id: 'low-stock-alert',
         action: {
           label: 'Ver Inventario',
@@ -148,14 +147,17 @@ export default function Dashboard() {
   
   // Calculate net profit for the week (Ingresos - Costos - Gastos)
   const weekNetProfit = weekSales.reduce((sum, s) => {
-    const saleProfit = s.items.reduce((itemSum, item) => {
-      const price = item.salePrice;
-      const discountAmount = item.discount > 0 ? price * (item.discount / 100) : 0;
+    const saleProfit = (s.items || []).reduce((itemSum, item) => {
+      const price = Number(item.salePrice) || 0;
+      const discount = Number(item.discount) || 0;
+      const discountAmount = discount > 0 ? price * (discount / 100) : 0;
       const finalPrice = price - discountAmount;
-      return itemSum + ((finalPrice - item.purchasePrice) * item.quantity);
+      const purchasePrice = Number(item.purchasePrice) || 0;
+      const qty = Number(item.quantity) || 0;
+      return itemSum + ((finalPrice - purchasePrice) * qty);
     }, 0);
     
-    const commissionDeduction = (s.commissionPayer === 'vendedor' && s.commission) ? s.commission : 0;
+    const commissionDeduction = (s.commissionPayer === 'vendedor' && s.commission) ? Number(s.commission) : 0;
     
     return sum + saleProfit - commissionDeduction;
   }, 0) + weekExtraIncome - weekWithdrawals;
@@ -281,6 +283,42 @@ export default function Dashboard() {
           </h3>
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3">
             Ventas + Ingresos - Retiros
+          </p>
+        </motion.div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <div className="h-12 w-12 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+               <Package className="w-6 h-6" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">PRODUCTOS</p>
+          </div>
+          <h3 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mt-1">
+            {products.length}
+          </h3>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3">
+            En catálogo
+          </p>
+        </motion.div>
+
+        <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <div className="h-12 w-12 bg-teal-50 dark:bg-teal-900/30 rounded-full flex items-center justify-center text-teal-600 dark:text-teal-400">
+               <DollarSign className="w-6 h-6" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">VALOR INVENTARIO</p>
+          </div>
+          <h3 className="text-3xl font-bold tracking-tight text-teal-600 dark:text-teal-400 mt-1">
+            {formatCurrency(products.reduce((sum, p) => sum + ((Number(p.purchasePrice) || 0) * (Number(p.stock) || 0)), 0), settings?.currency)}
+          </h3>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3">
+            Costo de mercancía
           </p>
         </motion.div>
       </div>

@@ -182,7 +182,8 @@ export const CloudSyncProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
 
       // Collections diffing helper
-      const diffCollection = (colName: string, currentItems: any[], prevItems: any[]) => {
+      const diffCollection = (colName: string, currentItems: any[] = [], prevItems: any[] = []) => {
+        if (!currentItems || !prevItems) return;
         // Find added or updated items (reference equality check works due to Zustand's immutability)
         currentItems.forEach(item => {
           const oldItem = prevItems.find(o => o.id === item.id);
