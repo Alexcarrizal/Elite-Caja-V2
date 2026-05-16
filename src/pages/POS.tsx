@@ -73,6 +73,18 @@ export default function POS() {
   }, [showNewCustomerModal, showCustomProductModal, showSuccessModal]);
   const [customProduct, setCustomProduct] = useState({ name: '', price: 0, quantity: 1 });
 
+  const handleAddToCart = (product: Product, quantity: number = 1) => {
+    if (product.tracksInventory) {
+      const existingItem = cart.find(item => item.id === product.id);
+      const currentQuantityInCart = existingItem ? existingItem.quantity : 0;
+      if (currentQuantityInCart + quantity > product.stock) {
+        alert(`No hay suficiente inventario para agregar "${product.name}".\nStock disponible: ${product.stock}\nEn el carrito: ${currentQuantityInCart}`);
+        return;
+      }
+    }
+    addToCart(product, quantity);
+  };
+
   const topProducts = useMemo(() => {
     const productSales: Record<string, number> = {};
     sales.forEach(sale => {
@@ -245,7 +257,7 @@ export default function POS() {
       image: ''
     };
 
-    addToCart(newProduct, customProduct.quantity);
+    handleAddToCart(newProduct, customProduct.quantity);
     setShowCustomProductModal(false);
     setCustomProduct({ name: '', price: 0, quantity: 1 });
   };
@@ -265,7 +277,7 @@ export default function POS() {
             // Busqueda exacta por codigo de barras
             const exactMatch = products.find(p => p.barcode && String(p.barcode).toLowerCase() === term.toLowerCase());
             if (exactMatch) {
-               addToCart(exactMatch);
+               handleAddToCart(exactMatch);
                setSearchTerm('');
                // Force raw value clearing to avoid race conditions with scanner
                input.value = '';
@@ -282,7 +294,7 @@ export default function POS() {
             );
 
             if (currentFiltered.length === 1) {
-              addToCart(currentFiltered[0]);
+              handleAddToCart(currentFiltered[0]);
               setSearchTerm('');
               input.value = '';
             }
@@ -323,20 +335,28 @@ export default function POS() {
                 {topProducts.map(product => (
                   <button
                     key={`top-${product.id}`}
-                    onClick={() => addToCart(product)}
-                    className="flex flex-col text-left bg-blue-50/50 dark:bg-blue-900/10 rounded-xl p-2 hover:shadow-md transition-all border border-blue-100 dark:border-blue-800/30 hover:border-blue-300 dark:hover:border-blue-700 group"
+                    onClick={() => handleAddToCart(product)}
+                    disabled={product.tracksInventory && product.stock <= 0}
+                    className={`flex flex-col text-left rounded-xl p-2 transition-all border group ${
+                      product.tracksInventory && product.stock <= 0
+                        ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                        : 'bg-blue-50/50 dark:bg-blue-900/10 hover:shadow-md border-blue-100 dark:border-blue-800/30 hover:border-blue-300 dark:hover:border-blue-700'
+                    }`}
                   >
                     <div className="aspect-square w-full bg-white dark:bg-gray-800 rounded-lg mb-2 flex items-center justify-center overflow-hidden">
                       {product.image ? (
-                        <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" referrerPolicy="no-referrer" />
+                        <img src={product.image} alt={product.name} className={`w-full h-full object-cover transition-transform ${product.tracksInventory && product.stock <= 0 ? '' : 'group-hover:scale-105'}`} referrerPolicy="no-referrer" />
                       ) : (
                         <Receipt className="h-6 w-6 text-gray-300 dark:text-gray-600" />
                       )}
                     </div>
                     <h3 className="font-medium text-xs text-gray-900 dark:text-gray-100 line-clamp-2 mb-1 leading-tight">{product.name}</h3>
-                    <p className="text-blue-600 dark:text-blue-400 font-bold mt-auto text-sm">
+                    <p className={`font-bold mt-auto text-sm ${product.tracksInventory && product.stock <= 0 ? 'text-gray-500' : 'text-blue-600 dark:text-blue-400'}`}>
                       {formatCurrency(product.salePrice, settings.currency)}
                     </p>
+                    {product.tracksInventory && product.stock <= 0 && (
+                      <span className="text-[10px] text-red-500 font-bold uppercase tracking-wider mt-1">Agotado</span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -352,23 +372,28 @@ export default function POS() {
               {filteredProducts.map(product => (
                 <button
                   key={product.id}
-                  onClick={() => addToCart(product)}
-                  className="flex flex-col text-left bg-gray-50 dark:bg-gray-900 rounded-xl p-3 hover:shadow-md transition-all border border-transparent hover:border-blue-200 dark:hover:border-blue-800 group"
+                  onClick={() => handleAddToCart(product)}
+                  disabled={product.tracksInventory && product.stock <= 0}
+                  className={`flex flex-col text-left rounded-xl p-3 transition-all border group ${
+                    product.tracksInventory && product.stock <= 0
+                    ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                    : 'bg-gray-50 dark:bg-gray-900 hover:shadow-md border-transparent hover:border-blue-200 dark:hover:border-blue-800'
+                  }`}
                 >
                   <div className="aspect-square w-full bg-white dark:bg-gray-800 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
                     {product.image ? (
-                      <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" referrerPolicy="no-referrer" />
+                      <img src={product.image} alt={product.name} className={`w-full h-full object-cover transition-transform ${product.tracksInventory && product.stock <= 0 ? '' : 'group-hover:scale-105'}`} referrerPolicy="no-referrer" />
                     ) : (
                       <Receipt className="h-8 w-8 text-gray-300 dark:text-gray-600" />
                     )}
                   </div>
                   <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100 line-clamp-2 mb-1">{product.name}</h3>
-                  <p className="text-blue-600 dark:text-blue-400 font-bold mt-auto">
+                  <p className={`font-bold mt-auto ${product.tracksInventory && product.stock <= 0 ? 'text-gray-500' : 'text-blue-600 dark:text-blue-400'}`}>
                     {formatCurrency(product.salePrice, settings.currency)}
                   </p>
                   {product.tracksInventory && (
-                    <p className={`text-xs mt-1 ${product.stock <= product.minStock ? 'text-red-500 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
-                      Stock: {product.stock}
+                    <p className={`text-xs mt-1 font-medium ${product.stock <= 0 ? 'text-red-500' : product.stock <= product.minStock ? 'text-orange-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                      {product.stock <= 0 ? 'Agotado' : `Stock: ${product.stock}`}
                     </p>
                   )}
                 </button>
@@ -419,7 +444,13 @@ export default function POS() {
                     </button>
                     <span className="text-sm font-medium w-6 text-center dark:text-white">{item.quantity}</span>
                     <button 
-                      onClick={() => updateCartItem(item.cartId, item.quantity + 1)}
+                      onClick={() => {
+                        if (item.tracksInventory && item.quantity + 1 > item.stock) {
+                          alert(`No hay suficiente inventario para agregar "${item.name}".\nStock disponible: ${item.stock}`);
+                          return;
+                        }
+                        updateCartItem(item.cartId, item.quantity + 1)
+                      }}
                       className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-300"
                     >
                       <Plus className="h-3 w-3" />
