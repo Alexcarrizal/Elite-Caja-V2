@@ -119,25 +119,31 @@ export const shareReceiptWhatsApp = async (
   phone: string,
   name: string,
 ) => {
+  const cleanPhone = phone.replace(/\D/g, "");
+  const message = `Hola ${name}, adjunto el ticket de tu compra (Ticket #${sale.id}) por un total de ${formatCurrency(sale.total, settings.currency)}. ¡Gracias por tu preferencia!`;
+
+  // Check if we can share natively (usually on mobile apps)
+  const canNativeShare = navigator.share && navigator.canShare;
+  
+  let waWindow: Window | null = null;
+  if (!canNativeShare) {
+    // Open window synchronously to avoid popup blockers BEFORE async operations
+    waWindow = window.open('about:blank', '_blank');
+  }
+
   const blob = await generateReceiptImage(sale, settings);
   if (!blob) {
     alert("Error generando la imagen del ticket");
+    if (waWindow) waWindow.close();
     return;
   }
-
-  const cleanPhone = phone.replace(/\D/g, "");
-  const message = `Hola ${name}, adjunto el ticket de tu compra (Ticket #${sale.id}) por un total de ${formatCurrency(sale.total, settings.currency)}. ¡Gracias por tu preferencia!`;
 
   const file = new File([blob], `Ticket_${sale.id}.jpg`, {
     type: "image/jpeg",
   });
 
-  // Try Web Share API first (mostly for mobile apps which handles WhatsApp direct sharing beautifully)
-  if (
-    navigator.share &&
-    navigator.canShare &&
-    navigator.canShare({ files: [file] })
-  ) {
+  // Try Web Share API first
+  if (canNativeShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({
         title: `Ticket #${sale.id}`,
@@ -146,7 +152,10 @@ export const shareReceiptWhatsApp = async (
       });
       return; // Shared, we can stop here
     } catch (e) {
-      console.log("Share failed or was canceled, falling back to download", e);
+      console.log("Share failed or was canceled, falling back", e);
+      if (!waWindow) {
+        waWindow = window.open('about:blank', '_blank');
+      }
     }
   }
 
@@ -159,11 +168,13 @@ export const shareReceiptWhatsApp = async (
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 100);
 
-  // Then open WA web with the text prefilled
-  window.open(
-    `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`,
-    "_blank",
-  );
+  // Then redirect the blank window to WhatsApp with the text prefilled
+  if (waWindow) {
+    waWindow.location.href = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+  } else {
+    // Fallback if window opening failed initially
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
+  }
 };
