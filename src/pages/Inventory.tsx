@@ -27,6 +27,7 @@ export default function Inventory() {
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'zero' | 'no_sales'>('all');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const barcodeRef = useRef<HTMLDivElement>(null);
+  const [barcodePdfOptions, setBarcodePdfOptions] = useState({ show: false, width: 50, height: 25, quantity: 1 });
 
   const categories = useMemo(() => {
     return Array.from(new Set(products.map(p => p.category).filter(Boolean))).sort();
@@ -139,6 +140,49 @@ export default function Inventory() {
       a.href = url;
       a.download = `barcode-${formData.barcode}.jpg`;
       a.click();
+    }
+  };
+
+  const downloadBarcodePDF = () => {
+    if (!barcodeRef.current) return;
+    const canvas = barcodeRef.current.querySelector('canvas');
+    if (canvas) {
+      const imgData = canvas.toDataURL('image/jpeg');
+      const { width, height, quantity } = barcodePdfOptions;
+      
+      const doc = new jsPDF({
+        orientation: width > height ? 'landscape' : 'portrait',
+        unit: 'mm',
+        format: [width, height]
+      });
+
+      for (let i = 0; i < quantity; i++) {
+        if (i > 0) doc.addPage([width, height], width > height ? 'landscape' : 'portrait');
+        
+        const margin = 2;
+        const printWidthStr = width - (margin * 2);
+        const printHeightStr = height - (margin * 2);
+        
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const ratio = imgWidth / imgHeight;
+        
+        let printHeight = printWidthStr / ratio;
+        let printWidth = printWidthStr;
+        
+        if (printHeight > printHeightStr) {
+          printHeight = printHeightStr;
+          printWidth = printHeight * ratio;
+        }
+
+        const x = (width - printWidth) / 2;
+        const y = (height - printHeight) / 2;
+
+        doc.addImage(imgData, 'JPEG', x, y, printWidth, printHeight);
+      }
+      
+      doc.save(`etiquetas-${formData.barcode}.pdf`);
+      setBarcodePdfOptions({ ...barcodePdfOptions, show: false });
     }
   };
 
@@ -455,10 +499,39 @@ export default function Inventory() {
                         <div ref={barcodeRef} className="bg-white p-2 rounded">
                           <ReactBarcode value={formData.barcode} format="CODE128" renderer="canvas" width={1.5} height={50} displayValue={true} />
                         </div>
-                        <button type="button" onClick={downloadBarcode} className="mt-2 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                          <Download className="w-4 h-4 mr-1" />
-                          Descargar JPG
-                        </button>
+                        
+                        <div className="mt-4 flex gap-4">
+                          <button type="button" onClick={downloadBarcode} className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                            <Download className="w-4 h-4 mr-1" />
+                            JPG
+                          </button>
+                          <button type="button" onClick={() => setBarcodePdfOptions({ ...barcodePdfOptions, show: !barcodePdfOptions.show })} className="flex items-center text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+                            <Download className="w-4 h-4 mr-1" />
+                            PDF (Etiquetas)
+                          </button>
+                        </div>
+                        
+                        {barcodePdfOptions.show && (
+                          <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl w-full text-sm border border-gray-100 dark:border-gray-600">
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Ancho (mm)</label>
+                                <input type="number" value={barcodePdfOptions.width} onChange={e => setBarcodePdfOptions({...barcodePdfOptions, width: Number(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white" />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Alto (mm)</label>
+                                <input type="number" value={barcodePdfOptions.height} onChange={e => setBarcodePdfOptions({...barcodePdfOptions, height: Number(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white" />
+                              </div>
+                            </div>
+                            <div className="mb-4">
+                              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Cantidad de etiquetas</label>
+                              <input type="number" min="1" value={barcodePdfOptions.quantity} onChange={e => setBarcodePdfOptions({...barcodePdfOptions, quantity: Number(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white" />
+                            </div>
+                            <button type="button" onClick={downloadBarcodePDF} className="w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+                              Generar e Imprimir
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
