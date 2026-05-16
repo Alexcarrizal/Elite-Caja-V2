@@ -27,7 +27,7 @@ export default function Inventory() {
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'zero' | 'no_sales'>('all');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const barcodeRef = useRef<HTMLDivElement>(null);
-  const [barcodePdfOptions, setBarcodePdfOptions] = useState({ show: false, width: 50, height: 25, quantity: 1 });
+  const [barcodePdfOptions, setBarcodePdfOptions] = useState({ show: false, width: 5.0, height: 2.5, quantity: 1 });
 
   const categories = useMemo(() => {
     return Array.from(new Set(products.map(p => p.category).filter(Boolean))).sort();
@@ -151,34 +151,54 @@ export default function Inventory() {
       const { width, height, quantity } = barcodePdfOptions;
       
       const doc = new jsPDF({
-        orientation: width > height ? 'landscape' : 'portrait',
-        unit: 'mm',
-        format: [width, height]
+        orientation: 'portrait',
+        unit: 'cm',
+        format: 'letter'
       });
 
+      const pageWidth = 21.59;
+      const pageHeight = 27.94;
+      const pageMarginTop = 1;
+      const pageMarginLeft = 1;
+
+      const cols = Math.floor((pageWidth - 2 * pageMarginLeft) / width) || 1;
+      const rows = Math.floor((pageHeight - 2 * pageMarginTop) / height) || 1;
+      
+      const imgWidthPx = canvas.width;
+      const imgHeightPx = canvas.height;
+      const ratio = imgWidthPx / imgHeightPx;
+
+      const cellMargin = 0.2;
+      const cellPrintWidth = width - (cellMargin * 2);
+      const cellPrintHeight = height - (cellMargin * 2);
+
+      let printHeight = cellPrintWidth / ratio;
+      let printWidth = cellPrintWidth;
+      
+      if (printHeight > cellPrintHeight) {
+        printHeight = cellPrintHeight;
+        printWidth = printHeight * ratio;
+      }
+
+      let currentLabel = 0;
+
       for (let i = 0; i < quantity; i++) {
-        if (i > 0) doc.addPage([width, height], width > height ? 'landscape' : 'portrait');
-        
-        const margin = 2;
-        const printWidthStr = width - (margin * 2);
-        const printHeightStr = height - (margin * 2);
-        
-        const imgWidth = canvas.width;
-        const imgHeight = canvas.height;
-        const ratio = imgWidth / imgHeight;
-        
-        let printHeight = printWidthStr / ratio;
-        let printWidth = printWidthStr;
-        
-        if (printHeight > printHeightStr) {
-          printHeight = printHeightStr;
-          printWidth = printHeight * ratio;
+        if (i > 0 && currentLabel % (cols * rows) === 0) {
+          doc.addPage('letter', 'portrait');
         }
 
-        const x = (width - printWidth) / 2;
-        const y = (height - printHeight) / 2;
+        const positionOnPage = currentLabel % (cols * rows);
+        const col = positionOnPage % cols;
+        const row = Math.floor(positionOnPage / cols);
+
+        const cellX = pageMarginLeft + (col * width);
+        const cellY = pageMarginTop + (row * height);
+
+        const x = cellX + cellMargin + (cellPrintWidth - printWidth) / 2;
+        const y = cellY + cellMargin + (cellPrintHeight - printHeight) / 2;
 
         doc.addImage(imgData, 'JPEG', x, y, printWidth, printHeight);
+        currentLabel++;
       }
       
       doc.save(`etiquetas-${formData.barcode}.pdf`);
@@ -515,12 +535,12 @@ export default function Inventory() {
                           <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl w-full text-sm border border-gray-100 dark:border-gray-600">
                             <div className="grid grid-cols-2 gap-3 mb-3">
                               <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Ancho (mm)</label>
-                                <input type="number" value={barcodePdfOptions.width} onChange={e => setBarcodePdfOptions({...barcodePdfOptions, width: Number(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white" />
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Ancho (cm)</label>
+                                <input type="number" step="0.1" value={barcodePdfOptions.width} onChange={e => setBarcodePdfOptions({...barcodePdfOptions, width: Number(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white" />
                               </div>
                               <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Alto (mm)</label>
-                                <input type="number" value={barcodePdfOptions.height} onChange={e => setBarcodePdfOptions({...barcodePdfOptions, height: Number(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white" />
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Alto (cm)</label>
+                                <input type="number" step="0.1" value={barcodePdfOptions.height} onChange={e => setBarcodePdfOptions({...barcodePdfOptions, height: Number(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:text-white" />
                               </div>
                             </div>
                             <div className="mb-4">
