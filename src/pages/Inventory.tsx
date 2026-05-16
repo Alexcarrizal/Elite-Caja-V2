@@ -633,10 +633,29 @@ export default function Inventory() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Imagen del Producto</label>
-                    <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-gray-300" />
+                    <div className="space-y-2">
+                      <input 
+                        type="text" 
+                        placeholder="Enlace URL de la imagen (opcional)" 
+                        value={formData.image?.startsWith('data:') ? '' : formData.image} 
+                        onChange={e => setFormData({...formData, image: e.target.value})} 
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" 
+                      />
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 uppercase font-semibold">o subir:</span>
+                        <input type="file" accept="image/*" onChange={handleImageUpload} className="flex-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-gray-300" />
+                      </div>
+                    </div>
                     {formData.image && (
-                      <div className="mt-2 h-20 w-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
+                      <div className="mt-3 relative h-20 w-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 group">
                         <img src={formData.image} alt="Preview" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                        <button 
+                          type="button" 
+                          onClick={() => setFormData({...formData, image: ''})}
+                          className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center text-white"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
                       </div>
                     )}
                   </div>
