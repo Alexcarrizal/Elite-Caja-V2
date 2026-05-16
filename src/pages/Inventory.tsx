@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useStore, defaultSettings } from '../store/useStore';
 import { Product } from '../types';
 import { Plus, Search, Edit2, Trash2, Download, Upload, Barcode as BarcodeIcon, History, Package, AlertTriangle, ClipboardList, Clock } from 'lucide-react';
@@ -28,6 +29,17 @@ export default function Inventory() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const barcodeRef = useRef<HTMLDivElement>(null);
   const [barcodePdfOptions, setBarcodePdfOptions] = useState({ show: false, width: 5.0, height: 2.5, quantity: 1 });
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (location.state?.openNewProductModal) {
+      handleOpenModal();
+      // Clear the state so it doesn't reopen on refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   const categories = useMemo(() => {
     return Array.from(new Set(products.map(p => p.category).filter(Boolean))).sort();

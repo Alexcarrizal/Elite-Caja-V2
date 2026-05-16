@@ -21,7 +21,8 @@ import {
   EyeOff,
   PlusCircle,
   MinusCircle,
-  ClipboardList
+  ClipboardList,
+  PackagePlus
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -325,6 +326,16 @@ export default function Dashboard() {
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-3">
+        <button 
+          onClick={() => {
+            navigate('/inventory', { state: { openNewProductModal: true } });
+          }}
+          className="flex items-center justify-center gap-2 py-2 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] min-w-[160px]"
+        >
+          <PackagePlus className="w-5 h-5" />
+          <span className="font-bold">Nuevo Producto</span>
+        </button>
+
         <button 
           onClick={() => {
             setAdjustmentType('entrada');
