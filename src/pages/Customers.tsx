@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Search, Plus, Edit, Trash2, User, Phone, Mail, MessageCircle } from 'lucide-react';
 import { Customer } from '../types';
+import { capitalizeFirst } from '../utils/format';
 
 export default function Customers() {
   const { customers = [], addCustomer, updateCustomer, deleteCustomer } = useStore();
@@ -187,7 +188,7 @@ export default function Customers() {
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, name: capitalizeFirst(e.target.value) })}
                   className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white"
                   placeholder="Ej. Juan Pérez"
                 />

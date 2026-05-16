@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useStore, defaultSettings } from '../store/useStore';
 import { Save, Upload, Store, User, FileText, Settings as SettingsIcon, Download, Database, Lock, CreditCard, AlertTriangle, Trash2, Key, Monitor, Clock, CheckCircle2 } from 'lucide-react';
+import { capitalizeFirst } from '../utils/format';
 import { PaymentMethodType } from '../types';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -169,11 +170,11 @@ export default function Settings() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del Propietario</label>
-                <input type="text" value={formData.owner} onChange={e => setFormData({...formData, owner: e.target.value})} className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white transition-shadow" />
+                <input type="text" value={formData.owner} onChange={e => setFormData({...formData, owner: capitalizeFirst(e.target.value)})} className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white transition-shadow" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección Completa</label>
-                <textarea rows={2} value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white transition-shadow resize-none" />
+                <textarea rows={2} value={formData.address} onChange={e => setFormData({...formData, address: capitalizeFirst(e.target.value)})} className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white transition-shadow resize-none" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -236,7 +237,7 @@ export default function Settings() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mensaje en Tickets</label>
-              <textarea rows={3} value={formData.receiptMessage} onChange={e => setFormData({...formData, receiptMessage: e.target.value})} placeholder="Ej: ¡Gracias por su compra! Vuelva pronto." className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white transition-shadow resize-none" />
+              <textarea rows={3} value={formData.receiptMessage} onChange={e => setFormData({...formData, receiptMessage: capitalizeFirst(e.target.value)})} placeholder="Ej: ¡Gracias por su compra! Vuelva pronto." className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white transition-shadow resize-none" />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Este mensaje aparecerá al final de todos los tickets impresos y PDFs.</p>
             </div>
           </div>

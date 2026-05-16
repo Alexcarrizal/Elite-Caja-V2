@@ -7,7 +7,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, subDays, isAfter } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { formatCurrency } from '../utils/format';
+import { formatCurrency, capitalizeFirst } from '../utils/format';
 import ReactBarcode from 'react-barcode';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -414,11 +414,11 @@ export default function Inventory() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del Producto *</label>
-                    <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+                    <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: capitalizeFirst(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Categoría</label>
-                    <input list="categories-list" type="text" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+                    <input list="categories-list" type="text" value={formData.category} onChange={e => setFormData({...formData, category: capitalizeFirst(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
                     <datalist id="categories-list">
                       {categories.map(c => <option key={c} value={c} />)}
                     </datalist>
@@ -464,14 +464,14 @@ export default function Inventory() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Proveedor</label>
-                    <input list="suppliers-list" type="text" value={formData.supplier} onChange={e => setFormData({...formData, supplier: e.target.value})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+                    <input list="suppliers-list" type="text" value={formData.supplier} onChange={e => setFormData({...formData, supplier: capitalizeFirst(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
                     <datalist id="suppliers-list">
                       {suppliers.map(s => <option key={s} value={s} />)}
                     </datalist>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Garantía (Opcional)</label>
-                    <input type="text" placeholder="Ej: 1 año, 30 días, etc." value={formData.warranty || ''} onChange={e => setFormData({...formData, warranty: e.target.value})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+                    <input type="text" placeholder="Ej: 1 año, 30 días, etc." value={formData.warranty || ''} onChange={e => setFormData({...formData, warranty: capitalizeFirst(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
                   </div>
                 </div>
 

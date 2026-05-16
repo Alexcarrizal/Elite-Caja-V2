@@ -3,7 +3,7 @@ import { useStore, defaultSettings } from '../store/useStore';
 import { Search, Plus, Minus, Trash2, CreditCard, Banknote, Smartphone, Receipt, ShoppingCart, Star, Check, Printer, ArrowRight, UserPlus, User, AlertTriangle, MessageCircle } from 'lucide-react';
 import { generateReceiptPDF } from '../utils/pdf';
 import { shareReceiptWhatsApp } from '../utils/receiptImage';
-import { formatCurrency } from '../utils/format';
+import { formatCurrency, capitalizeFirst } from '../utils/format';
 import { PaymentMethodType, Sale } from '../types';
 import { AnimatePresence, motion } from 'motion/react';
 
@@ -663,7 +663,7 @@ export default function POS() {
                     type="text"
                     required
                     value={newCustomer.name}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, name: capitalizeFirst(e.target.value) })}
                     className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white transition-shadow"
                     placeholder="Ej. Juan Pérez"
                   />
@@ -808,7 +808,7 @@ export default function POS() {
                     type="text"
                     required
                     value={customProduct.name}
-                    onChange={(e) => setCustomProduct({ ...customProduct, name: e.target.value })}
+                    onChange={(e) => setCustomProduct({ ...customProduct, name: capitalizeFirst(e.target.value) })}
                     className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white"
                     placeholder="Ej. Servicio de reparación"
                     autoFocus

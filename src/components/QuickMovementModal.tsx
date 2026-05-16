@@ -3,7 +3,7 @@ import { useStore, defaultSettings } from '../store/useStore';
 import { X, DollarSign, Save, ArrowUpCircle, ArrowDownCircle, CreditCard, Banknote, Smartphone, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { PaymentMethodType } from '../types';
-import { formatCurrency } from '../utils/format';
+import { formatCurrency, capitalizeFirst } from '../utils/format';
 
 interface QuickMovementModalProps {
   isOpen: boolean;
@@ -116,7 +116,7 @@ export default function QuickMovementModal({ isOpen, onClose, type }: QuickMovem
               type="text"
               placeholder="Ej: Venta rápida, Pago de servicio..."
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => setDescription(capitalizeFirst(e.target.value))}
               className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white"
             />
           </div>
@@ -272,7 +272,7 @@ export default function QuickMovementModal({ isOpen, onClose, type }: QuickMovem
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas (Opcional)</label>
             <textarea 
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => setNotes(capitalizeFirst(e.target.value))}
               placeholder="Detalles adicionales..."
               className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white h-20 resize-none"
             />

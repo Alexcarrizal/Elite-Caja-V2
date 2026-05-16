@@ -4,7 +4,7 @@ import { useStore, defaultSettings } from '../store/useStore';
 import { Wallet, ArrowDownCircle, ArrowUpCircle, FileText, Lock, Unlock, Trash2, Edit2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { formatCurrency } from '../utils/format';
+import { formatCurrency, capitalizeFirst } from '../utils/format';
 import { jsPDF } from 'jspdf';
 import { PaymentMethodType } from '../types';
 
@@ -552,7 +552,7 @@ export default function CashRegister() {
                       type="text"
                       required
                       value={description}
-                      onChange={(e) => setDescription(e.target.value)}
+                      onChange={(e) => setDescription(capitalizeFirst(e.target.value))}
                       className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white"
                       placeholder={actionType === 'withdraw' ? 'Ej. Pago de servicios' : 'Ej. Cambio inicial'}
                     />
@@ -583,7 +583,7 @@ export default function CashRegister() {
                     </label>
                     <textarea
                       value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
+                      onChange={(e) => setNotes(capitalizeFirst(e.target.value))}
                       className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white resize-none"
                       placeholder="Detalles adicionales..."
                       rows={2}
