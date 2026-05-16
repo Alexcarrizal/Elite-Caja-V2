@@ -97,17 +97,23 @@ export const generateReceiptImage = async (
       logging: false,
     });
     document.body.removeChild(div);
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       canvas.toBlob(
         (blob) => {
-          resolve(blob);
+          if (blob) {
+            resolve(blob);
+          } else {
+            console.error("canvas.toBlob returned null. Width:", canvas.width, "Height:", canvas.height);
+            reject(new Error("No se pudo generar la imagen del ticket (Blob was null)."));
+          }
         },
         "image/jpeg",
         0.95,
       );
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error("Error generating image", e);
+    alert("Error generando canvas: " + String(e.message || e));
     document.body.removeChild(div);
     return null;
   }
@@ -121,65 +127,51 @@ export const shareReceiptWhatsApp = async (
 ) => {
   const cleanPhone = phone ? phone.replace(/\D/g, "") : "";
   const customerName = name || "Cliente";
-  const message = `Hola ${customerName}, adjunto el ticket de tu compra (Ticket #${sale.id}) por un total de ${formatCurrency(sale.total, settings.currency)}. ¡Gracias por tu preferencia!`;
+  const message = `Hola ${customerName}, enviamos el comprobante de tu compra (Ticket #${sale.id}) por un total de ${formatCurrency(sale.total, settings.currency)}. ¡Gracias por tu preferencia!`;
 
   // Check if we can share natively (usually on mobile apps)
   const canNativeShare = navigator.share && navigator.canShare;
   
-  let waWindow: Window | null = null;
-  if (!canNativeShare) {
-    // Open window synchronously to avoid popup blockers BEFORE async operations
-    waWindow = window.open('about:blank', '_blank');
-  }
-
-  const blob = await generateReceiptImage(sale, settings);
-  if (!blob) {
-    alert("Error generando la imagen del ticket");
-    if (waWindow) waWindow.close();
-    return;
-  }
-
-  const file = new File([blob], `Ticket_${sale.id}.jpg`, {
-    type: "image/jpeg",
-  });
-
-  // Try Web Share API first
-  if (canNativeShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({
-        title: `Ticket #${sale.id}`,
-        text: message,
-        files: [file],
-      });
-      return; // Shared, we can stop here
-    } catch (e) {
-      console.log("Share failed or was canceled, falling back", e);
-      if (!waWindow) {
-        waWindow = window.open('about:blank', '_blank');
+  // Try Web Share API first if supported
+  if (canNativeShare) {
+    const blob = await generateReceiptImage(sale, settings);
+    if (blob) {
+      const file = new File([blob], `Ticket_${sale.id}.jpg`, { type: "image/jpeg" });
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            title: `Ticket #${sale.id}`,
+            text: message,
+            files: [file],
+          });
+          return;
+        } catch (e) {
+          console.log("Native share failed", e);
+        }
       }
     }
   }
 
-  // Fallback for Desktop/Web
-  // Let's attempt to download it automatically so they can drag and drop it.
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `Ticket_${sale.id}.jpg`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 100);
+  // Fallback for Desktop/Web or if Native share failed.
+  // Generate blob for direct download
+  const blob = await generateReceiptImage(sale, settings);
+  if (blob) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Ticket_${sale.id}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+  } else {
+    console.error("Could not generate receipt image for fallback WhatsApp share");
+  }
 
-  // Then redirect the blank window to WhatsApp with the text prefilled
+  // Open WhatsApp Web
   const waUrl = cleanPhone 
     ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
     : `https://wa.me/?text=${encodeURIComponent(message)}`;
 
-  if (waWindow) {
-    waWindow.location.href = waUrl;
-  } else {
-    // Fallback if window opening failed initially
-    window.open(waUrl, "_blank");
-  }
+  window.open(waUrl, "_blank");
 };
