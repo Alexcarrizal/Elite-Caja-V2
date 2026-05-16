@@ -116,11 +116,12 @@ export const generateReceiptImage = async (
 export const shareReceiptWhatsApp = async (
   sale: Sale,
   settings: BusinessSettings,
-  phone: string,
-  name: string,
+  phone?: string,
+  name?: string,
 ) => {
-  const cleanPhone = phone.replace(/\D/g, "");
-  const message = `Hola ${name}, adjunto el ticket de tu compra (Ticket #${sale.id}) por un total de ${formatCurrency(sale.total, settings.currency)}. ¡Gracias por tu preferencia!`;
+  const cleanPhone = phone ? phone.replace(/\D/g, "") : "";
+  const customerName = name || "Cliente";
+  const message = `Hola ${customerName}, adjunto el ticket de tu compra (Ticket #${sale.id}) por un total de ${formatCurrency(sale.total, settings.currency)}. ¡Gracias por tu preferencia!`;
 
   // Check if we can share natively (usually on mobile apps)
   const canNativeShare = navigator.share && navigator.canShare;
@@ -171,10 +172,14 @@ export const shareReceiptWhatsApp = async (
   setTimeout(() => URL.revokeObjectURL(url), 100);
 
   // Then redirect the blank window to WhatsApp with the text prefilled
+  const waUrl = cleanPhone 
+    ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
+    : `https://wa.me/?text=${encodeURIComponent(message)}`;
+
   if (waWindow) {
-    waWindow.location.href = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    waWindow.location.href = waUrl;
   } else {
     // Fallback if window opening failed initially
-    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
+    window.open(waUrl, "_blank");
   }
 };

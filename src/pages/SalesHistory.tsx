@@ -127,21 +127,19 @@ export default function SalesHistory() {
   };
 
   const handleWhatsAppReceipt = (sale: Sale) => {
-    if (!sale.customerId) return;
-    const customer = customers.find(c => c.id === sale.customerId);
-    if (!customer || !customer.phone) {
-      setConfirmModal({
-        isOpen: true,
-        title: 'Aviso',
-        message: 'El cliente no tiene un número de teléfono registrado.',
-        isAlert: true,
-        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
-      });
-      return;
+    let phone = "";
+    let name = "Cliente";
+
+    if (sale.customerId && sale.customerId !== 'mostrador') {
+      const customer = customers.find(c => c.id === sale.customerId);
+      if (customer) {
+        phone = customer.phone || "";
+        name = customer.name || "Cliente";
+      }
     }
     
     // Generate the JPG and share directly
-    shareReceiptWhatsApp(sale, settings, customer.phone, customer.name);
+    shareReceiptWhatsApp(sale, settings, phone, name);
   };
 
   const printReceipt = (sale: Sale) => {

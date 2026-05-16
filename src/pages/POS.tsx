@@ -180,15 +180,21 @@ export default function POS() {
   };
 
   const handleSendWhatsApp = () => {
-    if (!lastSale || !lastSale.customerId) return;
-    const customer = customers.find(c => c.id === lastSale.customerId);
-    if (!customer || !customer.phone) {
-      alert('El cliente no tiene un número de teléfono registrado.');
-      return;
+    if (!lastSale) return;
+    
+    let phone = "";
+    let name = "Cliente";
+    
+    if (lastSale.customerId && lastSale.customerId !== 'mostrador') {
+      const customer = customers.find(c => c.id === lastSale.customerId);
+      if (customer) {
+        phone = customer.phone || "";
+        name = customer.name || "Cliente";
+      }
     }
     
     // Generate the JPG and share directly
-    shareReceiptWhatsApp(lastSale, settings, customer.phone, customer.name);
+    shareReceiptWhatsApp(lastSale, settings, phone, name);
   };
 
   const handleNewSale = () => {
@@ -752,15 +758,13 @@ export default function POS() {
                   Imprimir Ticket
                 </button>
                 
-                {lastSale.customerId && customers.find(c => c.id === lastSale.customerId)?.phone && (
-                  <button
-                    onClick={handleSendWhatsApp}
-                    className="w-full py-3.5 px-4 bg-[#25D366] hover:bg-[#128C7E] text-white font-medium rounded-xl transition-all flex items-center justify-center shadow-sm shadow-[#25D366]/20"
-                  >
-                    <MessageCircle className="w-5 h-5 mr-2" />
-                    Enviar WhatsApp
-                  </button>
-                )}
+                <button
+                  onClick={handleSendWhatsApp}
+                  className="w-full py-3.5 px-4 bg-[#25D366] hover:bg-[#128C7E] text-white font-medium rounded-xl transition-all flex items-center justify-center shadow-sm shadow-[#25D366]/20"
+                >
+                  <MessageCircle className="w-5 h-5 mr-2" />
+                  Enviar WhatsApp
+                </button>
                 
                 <button
                   onClick={handleNewSale}
