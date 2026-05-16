@@ -197,6 +197,11 @@ export default function Inventory() {
         const x = cellX + cellMargin + (cellPrintWidth - printWidth) / 2;
         const y = cellY + cellMargin + (cellPrintHeight - printHeight) / 2;
 
+        doc.setDrawColor(150, 150, 150);
+        doc.setLineWidth(0.01);
+        doc.setLineDashPattern([0.1, 0.1], 0);
+        doc.rect(cellX, cellY, width, height);
+
         doc.addImage(imgData, 'JPEG', x, y, printWidth, printHeight);
         currentLabel++;
       }
