@@ -1,4 +1,4 @@
-import html2canvas from "html2canvas";
+import { toBlob } from "html-to-image";
 import { Sale, BusinessSettings } from "../types";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -91,30 +91,18 @@ export const generateReceiptImage = async (
   document.body.appendChild(div);
 
   try {
-    const canvas = await html2canvas(div, {
-      backgroundColor: "#ffffff",
-      scale: 2,
-      logging: false,
-    });
+    const blob = await toBlob(div, { backgroundColor: '#ffffff', pixelRatio: 2 });
     document.body.removeChild(div);
-    return new Promise((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            resolve(blob);
-          } else {
-            console.error("canvas.toBlob returned null. Width:", canvas.width, "Height:", canvas.height);
-            reject(new Error("No se pudo generar la imagen del ticket (Blob was null)."));
-          }
-        },
-        "image/jpeg",
-        0.95,
-      );
-    });
+    if (!blob) {
+      throw new Error("No se pudo generar el contenido del ticket");
+    }
+    return blob;
   } catch (e: any) {
     console.error("Error generating image", e);
-    alert("Error generando canvas: " + String(e.message || e));
-    document.body.removeChild(div);
+    // If image generation fails, don't alert, just return null so it falls back nicely.
+    if (document.body.contains(div)) {
+      document.body.removeChild(div);
+    }
     return null;
   }
 };
