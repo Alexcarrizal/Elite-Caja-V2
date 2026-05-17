@@ -22,7 +22,8 @@ import {
   PlusCircle,
   MinusCircle,
   ClipboardList,
-  PackagePlus
+  PackagePlus,
+  TrendingDown
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -36,6 +37,7 @@ import {
 import { Link } from 'react-router-dom';
 import StockReplenishmentModal from '../components/StockReplenishmentModal';
 import QuickMovementModal from '../components/QuickMovementModal';
+import LessSoldProductsModal from '../components/LessSoldProductsModal';
 
 export default function Dashboard() {
   const { 
@@ -56,6 +58,7 @@ export default function Dashboard() {
 
   const [isReplenishModalOpen, setIsReplenishModalOpen] = useState(false);
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
+  const [isLessSoldModalOpen, setIsLessSoldModalOpen] = useState(false);
   const [adjustmentType, setAdjustmentType] = useState<'entrada' | 'salida'>('entrada');
 
   const todaySales = useMemo(() => {
@@ -365,6 +368,14 @@ export default function Dashboard() {
           <ClipboardList className="w-5 h-5" />
           <span className="font-bold">Reponer Stock</span>
         </button>
+
+        <button 
+          onClick={() => setIsLessSoldModalOpen(true)}
+          className="flex items-center justify-center gap-2 py-2 px-6 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-md shadow-red-200 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] min-w-[160px]"
+        >
+          <TrendingDown className="w-5 h-5" />
+          <span className="font-bold">Menos Vendidos</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -507,6 +518,11 @@ export default function Dashboard() {
         isOpen={isAdjustmentModalOpen}
         onClose={() => setIsAdjustmentModalOpen(false)}
         type={adjustmentType}
+      />
+
+      <LessSoldProductsModal
+        isOpen={isLessSoldModalOpen}
+        onClose={() => setIsLessSoldModalOpen(false)}
       />
     </motion.div>
   );
