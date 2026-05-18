@@ -149,6 +149,17 @@ export default function Dashboard() {
   const weekTotal = weekSales.reduce((sum, s) => sum + s.total, 0);
   const monthTotal = monthSales.reduce((sum, s) => sum + s.total, 0);
   
+  const todayProductCost = useMemo(() => {
+    return todaySales.reduce((sum, s) => {
+      const cost = (s.items || []).reduce((itemSum, item) => {
+        const purchasePrice = Number(item.purchasePrice) || 0;
+        const qty = Number(item.quantity) || 0;
+        return itemSum + (purchasePrice * qty);
+      }, 0);
+      return sum + cost;
+    }, 0);
+  }, [todaySales]);
+
   // Calculate net profit for the week (Ingresos - Costos - Gastos)
   const weekNetProfit = weekSales.reduce((sum, s) => {
     const saleProfit = (s.items || []).reduce((itemSum, item) => {
@@ -208,7 +219,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <div className="h-12 w-12 bg-orange-50 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400">
@@ -246,6 +257,23 @@ export default function Dashboard() {
           </h3>
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3 flex items-center">
             Ventas + Ingresos - Costos - Retiros
+          </p>
+        </motion.div>
+
+        <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <div className="h-12 w-12 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400">
+              <ShoppingCart className="w-6 h-6" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">COSTO DE PRODUCTOS</p>
+          </div>
+          <h3 className="text-3xl font-bold tracking-tight text-red-600 dark:text-red-400 mt-1">
+            {formatCurrency(todayProductCost, settings?.currency)}
+          </h3>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3 flex items-center">
+            Costo de los productos vendidos hoy
           </p>
         </motion.div>
 
