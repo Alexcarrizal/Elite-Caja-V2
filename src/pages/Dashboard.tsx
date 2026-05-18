@@ -268,9 +268,12 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center justify-between mb-1">
             <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">COSTO DE PRODUCTOS</p>
+            <button onClick={() => toggleDashboardVisibility('productCost')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+              {dashboardVisibility?.productCost !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            </button>
           </div>
           <h3 className="text-3xl font-bold tracking-tight text-red-600 dark:text-red-400 mt-1">
-            {formatCurrency(todayProductCost, settings?.currency)}
+            {dashboardVisibility?.productCost !== false ? formatCurrency(todayProductCost, settings?.currency) : '••••••'}
           </h3>
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3 flex items-center">
             Costo de los productos vendidos hoy
