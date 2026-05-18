@@ -16,32 +16,7 @@ export default function Settings() {
   React.useEffect(() => {
     setFormData(settings);
   }, [settings]);
-  const [newPin, setNewPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleChangePin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPin || newPin.length < 4) {
-      toast.error('El PIN debe tener al menos 4 dígitos');
-      return;
-    }
-    if (newPin !== confirmPin) {
-      toast.error('Los PINs no coinciden');
-      return;
-    }
-
-    // Update the admin user PIN (or current user if admin)
-    const adminUser = users.find(u => u.role === 'Administrador');
-    if (adminUser) {
-      useStore.setState((state) => ({
-        users: state.users.map(u => u.id === adminUser.id ? { ...u, pin: newPin } : u)
-      }));
-      toast.success('PIN de Administrador actualizado correctamente');
-      setNewPin('');
-      setConfirmPin('');
-    }
-  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -284,52 +259,7 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col md:col-span-2">
-          <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center space-x-3 bg-gray-50 dark:bg-gray-900/50">
-            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg text-yellow-600 dark:text-yellow-400">
-              <Lock className="w-5 h-5" />
-            </div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Seguridad de Acceso</h2>
-          </div>
-          <div className="p-6">
-            <form onSubmit={handleChangePin} className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-              <div className="space-y-4">
-                <h3 className="font-medium text-gray-900 dark:text-white">Cambiar PIN de Administrador</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Este PIN se utiliza para acceder a todas las funciones del sistema.</p>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nuevo PIN (4+ dígitos)</label>
-                  <input 
-                    type="password" 
-                    value={newPin} 
-                    onChange={e => setNewPin(e.target.value)} 
-                    placeholder="••••"
-                    className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white transition-shadow" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirmar PIN</label>
-                  <input 
-                    type="password" 
-                    value={confirmPin} 
-                    onChange={e => setConfirmPin(e.target.value)} 
-                    placeholder="••••"
-                    className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white transition-shadow" 
-                  />
-                </div>
-              </div>
-              <div className="pb-1">
-                <button 
-                  type="submit"
-                  className="w-full py-3 bg-gray-800 dark:bg-gray-700 text-white font-medium rounded-xl hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors"
-                >
-                  Actualizar PIN
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+
 
         {/* Respaldo de Base de Datos */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col md:col-span-2">
