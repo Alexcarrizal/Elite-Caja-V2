@@ -132,7 +132,7 @@ export default function Login() {
           <form className="space-y-6" onSubmit={handleLocalSubmit}>
             <div>
               <label htmlFor="pin" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                PIN Maestro
+                PIN de Acceso
               </label>
               <div className="mt-2 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
