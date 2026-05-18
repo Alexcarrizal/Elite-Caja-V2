@@ -7,7 +7,15 @@ service cloud.firestore {
     }
 
     function isSignedIn() {
-      return request.auth != null && request.auth.token.email_verified == true;
+      return request.auth != null;
+    }
+
+    match /stores/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      
+      match /{document=**} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
     }
 
     match /licenses/{licenseId} {
