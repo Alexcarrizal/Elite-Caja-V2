@@ -65,19 +65,22 @@ export default function Dashboard() {
     return sales.filter(s => isToday(new Date(s.date)));
   }, [sales]);
 
-  const weekSales = useMemo(() => {
+  const weekStart = useMemo(() => {
     const now = new Date();
-    // Get Monday of current week
+    const startDay = settings?.weekStartDay ?? 1; // Default to Monday if not set
     const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
-    const monday = new Date(now.setDate(diff));
-    monday.setHours(0, 0, 0, 0);
-    
+    const diffDays = (day - startDay + 7) % 7;
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffDays);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }, [settings?.weekStartDay]);
+
+  const weekSales = useMemo(() => {
     return sales.filter(s => {
       const saleDate = new Date(s.date);
-      return saleDate >= monday;
+      return saleDate >= weekStart;
     });
-  }, [sales]);
+  }, [sales, weekStart]);
 
   const monthSales = useMemo(() => {
     const now = new Date();
@@ -123,28 +126,16 @@ export default function Dashboard() {
   }, [cashRegisters]);
 
   const weekExtraIncome = useMemo(() => {
-    const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(now.setDate(diff));
-    monday.setHours(0, 0, 0, 0);
-
     return cashRegisters
-      .filter(r => new Date(r.openedAt) >= monday)
+      .filter(r => new Date(r.openedAt) >= weekStart)
       .reduce((sum, r) => sum + (r.extraIncome || 0), 0);
-  }, [cashRegisters]);
+  }, [cashRegisters, weekStart]);
 
   const weekWithdrawals = useMemo(() => {
-    const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(now.setDate(diff));
-    monday.setHours(0, 0, 0, 0);
-
     return cashRegisters
-      .filter(r => new Date(r.openedAt) >= monday)
+      .filter(r => new Date(r.openedAt) >= weekStart)
       .reduce((sum, r) => sum + (r.withdrawals || 0), 0);
-  }, [cashRegisters]);
+  }, [cashRegisters, weekStart]);
 
   const weekTotal = weekSales.reduce((sum, s) => sum + s.total, 0);
   const monthTotal = monthSales.reduce((sum, s) => sum + s.total, 0);
@@ -297,7 +288,7 @@ export default function Dashboard() {
           </h3>
           <p className="text-xs font-medium text-green-600 dark:text-green-400 mt-3 flex items-center bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-md w-fit">
             <TrendingUp className="w-3 h-3 mr-1" />
-            {format(new Date(new Date().setDate(new Date().getDate() - new Date().getDay() + (new Date().getDay() === 0 ? -6 : 1))), 'd MMM', { locale: es })} - Presente
+            {format(weekStart, 'd MMM', { locale: es })} - Presente
           </p>
         </motion.div>
 

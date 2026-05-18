@@ -210,6 +210,19 @@ export default function Settings() {
               </label>
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Día de inicio de semana</label>
+              <select value={formData.weekStartDay ?? 1} onChange={e => setFormData({...formData, weekStartDay: Number(e.target.value)})} className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white transition-shadow">
+                <option value="1">Lunes</option>
+                <option value="2">Martes</option>
+                <option value="3">Miércoles</option>
+                <option value="4">Jueves</option>
+                <option value="5">Viernes</option>
+                <option value="6">Sábado</option>
+                <option value="0">Domingo</option>
+              </select>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Afecta los cortes de las tarjetas de ventas y ganancias de la semana en la vista principal.</p>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mensaje en Tickets</label>
               <textarea rows={3} value={formData.receiptMessage} onChange={e => setFormData({...formData, receiptMessage: capitalizeFirst(e.target.value)})} placeholder="Ej: ¡Gracias por su compra! Vuelva pronto." className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white transition-shadow resize-none" />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Este mensaje aparecerá al final de todos los tickets impresos y PDFs.</p>

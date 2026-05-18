@@ -17,6 +17,7 @@ export interface BusinessSettings {
   acceptedPaymentMethods: PaymentMethodType[];
   backupFrequency?: 'never' | 'weekly' | 'biweekly' | 'monthly';
   lastBackupDate?: string;
+  weekStartDay?: number; // 0 for Sunday, 1 for Monday, etc.
 }
 
 export interface Customer {

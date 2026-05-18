@@ -96,6 +96,7 @@ export const defaultSettings: BusinessSettings = {
   acceptedPaymentMethods: ['Efectivo', 'Tarjeta', 'Transferencia', 'Mixto', 'Mercado Pago', 'CLIP'],
   backupFrequency: 'never',
   lastBackupDate: '',
+  weekStartDay: 1, // Default to Monday
 };
 
 const defaultUser: User = {
