@@ -211,22 +211,21 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <div className="h-12 w-12 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400">
-              <DollarSign className="w-6 h-6" />
+            <div className="h-12 w-12 bg-orange-50 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400">
+              <Clock className="w-6 h-6" />
             </div>
           </div>
           <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">VENTAS SEMANA</p>
-            <button onClick={() => toggleDashboardVisibility('weekSales')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-              {dashboardVisibility?.weekSales !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">VENTAS DE HOY</p>
+            <button onClick={() => toggleDashboardVisibility('todaySales')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+              {dashboardVisibility?.todaySales !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </button>
           </div>
           <h3 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mt-1">
-            {dashboardVisibility?.weekSales !== false ? formatCurrency(weekTotal, settings?.currency) : '••••••'}
+            {dashboardVisibility?.todaySales !== false ? formatCurrency(todayTotal + todayExtraIncome - todayWithdrawals, settings?.currency) : '••••••'}
           </h3>
-          <p className="text-xs font-medium text-green-600 dark:text-green-400 mt-3 flex items-center bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-md w-fit">
-            <TrendingUp className="w-3 h-3 mr-1" />
-            {format(new Date(new Date().setDate(new Date().getDate() - new Date().getDay() + (new Date().getDay() === 0 ? -6 : 1))), 'd MMM', { locale: es })} - Presente
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3">
+            Ventas + Ingresos - Retiros
           </p>
         </motion.div>
 
@@ -252,6 +251,27 @@ export default function Dashboard() {
 
         <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
+            <div className="h-12 w-12 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <DollarSign className="w-6 h-6" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">VENTAS SEMANA</p>
+            <button onClick={() => toggleDashboardVisibility('weekSales')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+              {dashboardVisibility?.weekSales !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            </button>
+          </div>
+          <h3 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mt-1">
+            {dashboardVisibility?.weekSales !== false ? formatCurrency(weekTotal, settings?.currency) : '••••••'}
+          </h3>
+          <p className="text-xs font-medium text-green-600 dark:text-green-400 mt-3 flex items-center bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-md w-fit">
+            <TrendingUp className="w-3 h-3 mr-1" />
+            {format(new Date(new Date().setDate(new Date().getDate() - new Date().getDay() + (new Date().getDay() === 0 ? -6 : 1))), 'd MMM', { locale: es })} - Presente
+          </p>
+        </motion.div>
+
+        <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
             <div className="h-12 w-12 bg-purple-50 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400">
               <Calendar className="w-6 h-6" />
             </div>
@@ -267,26 +287,6 @@ export default function Dashboard() {
           </h3>
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3 capitalize">
             {format(new Date(), 'MMMM yyyy', { locale: es })}
-          </p>
-        </motion.div>
-
-        <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <div className="h-12 w-12 bg-orange-50 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400">
-              <Clock className="w-6 h-6" />
-            </div>
-          </div>
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">VENTAS DE HOY</p>
-            <button onClick={() => toggleDashboardVisibility('todaySales')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-              {dashboardVisibility?.todaySales !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-            </button>
-          </div>
-          <h3 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mt-1">
-            {dashboardVisibility?.todaySales !== false ? formatCurrency(todayTotal + todayExtraIncome - todayWithdrawals, settings?.currency) : '••••••'}
-          </h3>
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3">
-            Ventas + Ingresos - Retiros
           </p>
         </motion.div>
       </div>
