@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { generateLicensePin } from '../utils/license';
 import { BusinessSettings, Product, CartItem, Sale, CashRegister, User, InventoryMovement, Customer, Remission, License, PaymentMethodType, CashMovement } from '../types';
 
 import { type User as FirebaseUser } from 'firebase/auth';
@@ -61,7 +60,6 @@ interface AppState {
   
   // License Actions
   activateTrial: () => { success: boolean; message: string };
-  activateLicense: (pin: string) => { success: boolean; message: string };
   activateCloudLicense: (email: string) => void;
   checkLicense: () => void;
   regenerateMachineId: () => void;
@@ -79,8 +77,6 @@ const generateMachineId = () => {
   localStorage.setItem('machine_id', newId);
   return newId;
 };
-
-const MASTER_PIN = "99887766"; // This would be generated or stored securely
 
 export const defaultSettings: BusinessSettings = {
   name: 'EliteCaja',
@@ -664,23 +660,6 @@ export const useStore = create<AppState>()(
 
         set({ license: newLicense });
         return { success: true, message: 'Prueba de 5 días activada correctamente.' };
-      },
-
-      activateLicense: (pin: string) => {
-        const state = get();
-        const generatedPin = generateLicensePin(state.license.machineId);
-        
-        if (pin === MASTER_PIN || pin === generatedPin) {
-          set({
-            license: {
-              ...state.license,
-              status: 'active',
-              activatedAt: new Date().toISOString()
-            }
-          });
-          return { success: true, message: 'Licencia activada permanentemente.' };
-        }
-        return { success: false, message: 'PIN Maestro incorrecto.' };
       },
 
       activateCloudLicense: (email: string) => {

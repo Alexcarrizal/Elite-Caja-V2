@@ -8,10 +8,9 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function Settings() {
-  const { settings = defaultSettings, updateSettings, users, currentUser, license, activateLicense } = useStore();
+  const { settings = defaultSettings, updateSettings, users, currentUser, license } = useStore();
   const [formData, setFormData] = useState(settings || defaultSettings);
   const [isSaving, setIsSaving] = useState(false);
-  const [masterPin, setMasterPin] = useState('');
 
   // Sync form with store when settings change (e.g. after clear database or rehydration)
   React.useEffect(() => {
@@ -452,36 +451,6 @@ export default function Settings() {
                       </span>
                     </div>
                   )}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="font-bold text-gray-900 dark:text-white">Activar Licencia</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Si ya cuentas con un PIN Maestro, ingrésalo aquí para activar el sistema de forma permanente.
-                </p>
-                <div className="flex gap-2">
-                  <input 
-                    type="password" 
-                    value={masterPin}
-                    onChange={(e) => setMasterPin(e.target.value)}
-                    placeholder="PIN Maestro"
-                    className="flex-1 p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white transition-shadow font-mono"
-                  />
-                  <button 
-                    onClick={() => {
-                      const res = activateLicense(masterPin);
-                      if (res.success) {
-                        toast.success(res.message);
-                        setMasterPin('');
-                      } else {
-                        toast.error(res.message);
-                      }
-                    }}
-                    className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 dark:shadow-none"
-                  >
-                    Activar
-                  </button>
                 </div>
               </div>
             </div>

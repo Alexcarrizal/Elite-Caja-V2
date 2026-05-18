@@ -11,7 +11,7 @@ import { motion } from 'motion/react';
 import Logo from './Logo';
 
 export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { license, activateTrial, activateLicense, checkLicense, firebaseUser, theme, toggleTheme, login } = useStore();
+  const { license, activateTrial, checkLicense, firebaseUser, theme, toggleTheme, login } = useStore();
 
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -32,20 +32,6 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
     const result = activateTrial();
     if (result.success) {
       setSuccess(result.message);
-      setPin('');
-      login('1234');
-    } else {
-      setError(result.message);
-    }
-  };
-
-  const handleActivateLicense = () => {
-    setError('');
-    setSuccess('');
-    const result = activateLicense(pin);
-    if (result.success) {
-      setSuccess(result.message);
-      setPin('');
       login('1234');
     } else {
       setError(result.message);
@@ -157,8 +143,8 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
           </h2>
           <p className="text-center text-gray-500 dark:text-gray-400 mb-8 text-sm leading-relaxed px-2">
             {license.status === 'expired' 
-              ? 'Tu periodo de prueba ha expirado. Ingresa un PIN Maestro para continuar.' 
-              : 'El sistema de venta más potente. Activa una prueba de 5 días gratis o ingresa tu PIN Maestro.'}
+              ? 'Tu periodo de prueba ha expirado. Adquiere una licencia en la nube para continuar.' 
+              : 'El sistema de venta más potente. Activa una prueba de 5 días gratis o conecta tu cuenta en la nube.'}
           </p>
 
           <div className="mb-6">
@@ -182,41 +168,15 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
             )}
           </div>
 
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200 dark:border-gray-700" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">
-                O introduce el PIN local
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                PIN de Activación Permanente
-              </label>
-              <input
-                type="password"
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all text-center text-2xl tracking-widest font-mono"
-                placeholder="••••••••"
-                maxLength={12}
-              />
-            </div>
-
             {error && (
-              <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl flex items-center gap-2 text-sm animate-shake">
+              <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl flex items-center gap-2 text-sm animate-shake mb-4">
                 <ShieldAlert className="w-4 h-4 flex-shrink-0" />
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="p-3 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-xl flex items-center gap-2 text-sm">
+              <div className="p-3 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-xl flex items-center gap-2 text-sm mb-4">
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
                 {success}
               </div>
@@ -232,17 +192,7 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
                   Activar Prueba (5 días)
                 </button>
               )}
-              
-              <button
-                onClick={handleActivateLicense}
-                disabled={!pin}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2"
-              >
-                <CheckCircle2 className="w-5 h-5" />
-                Activar con PIN Maestro
-              </button>
             </div>
-          </div>
 
           <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
             <button 

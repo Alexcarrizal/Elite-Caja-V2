@@ -20,7 +20,6 @@ import Warranties from './pages/Warranties';
 import { useStore } from './store/useStore';
 import { Toaster } from 'sonner';
 import { LicenseGuard } from './components/LicenseGuard';
-import Keygen from './pages/Keygen';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './services/firebase';
 
@@ -49,7 +48,6 @@ export default function App() {
       <HashRouter>
         <Toaster position="top-center" richColors />
         <Routes>
-          <Route path="/keygen" element={<Keygen />} />
           <Route path="*" element={
             <LicenseGuard>
               <Routes>
