@@ -295,7 +295,7 @@ export default function CashRegister() {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 mb-6">
             {!currentRegister ? (
               <button 
                 onClick={() => setActionType('open')}
@@ -326,6 +326,54 @@ export default function CashRegister() {
               </>
             )}
           </div>
+
+          {currentRegister && currentRegister.movements && currentRegister.movements.length > 0 && (
+            <div className="bg-white/60 dark:bg-gray-800/60 p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Movimientos de Caja</h3>
+              <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
+                {[...currentRegister.movements].reverse().map((movement) => (
+                  <div key={movement.id} className="p-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="font-medium text-gray-900 dark:text-white text-sm">
+                        {movement.description}
+                      </span>
+                      <div className="flex items-center space-x-3">
+                        <span className={`font-bold text-sm ${movement.type === 'extra_income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {movement.type === 'extra_income' ? '+' : '-'}
+                          {formatCurrency(movement.amount, settings.currency)}
+                        </span>
+                        <div className="flex items-center space-x-1">
+                          <button 
+                            onClick={() => handleEditMovement(movement)}
+                            className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                            title="Editar"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteMovement(movement.id)}
+                            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+                      <span>{format(new Date(movement.date), 'HH:mm')}</span>
+                      <span className="capitalize">{movement.type === 'extra_income' ? 'Ingreso' : 'Retiro'}</span>
+                    </div>
+                    {movement.notes && (
+                      <p className="mt-2 text-xs text-gray-600 dark:text-gray-400 italic bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700">
+                        {movement.notes}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Totals Summary */}
@@ -392,53 +440,7 @@ export default function CashRegister() {
             </div>
           </div>
 
-          {currentRegister && currentRegister.movements && currentRegister.movements.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Movimientos de Caja</h3>
-              <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
-                {[...currentRegister.movements].reverse().map((movement) => (
-                  <div key={movement.id} className="p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800">
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="font-medium text-gray-900 dark:text-white text-sm">
-                        {movement.description}
-                      </span>
-                      <div className="flex items-center space-x-3">
-                        <span className={`font-bold text-sm ${movement.type === 'extra_income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {movement.type === 'extra_income' ? '+' : '-'}
-                          {formatCurrency(movement.amount, settings.currency)}
-                        </span>
-                        <div className="flex items-center space-x-1">
-                          <button 
-                            onClick={() => handleEditMovement(movement)}
-                            className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
-                            title="Editar"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteMovement(movement.id)}
-                            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
-                      <span>{format(new Date(movement.date), 'HH:mm')}</span>
-                      <span className="capitalize">{movement.type === 'extra_income' ? 'Ingreso' : 'Retiro'}</span>
-                    </div>
-                    {movement.notes && (
-                      <p className="mt-2 text-xs text-gray-600 dark:text-gray-400 italic bg-white dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700">
-                        {movement.notes}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+
         </div>
       </div>
 
