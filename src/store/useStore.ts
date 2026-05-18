@@ -62,6 +62,7 @@ interface AppState {
   // License Actions
   activateTrial: () => { success: boolean; message: string };
   activateLicense: (pin: string) => { success: boolean; message: string };
+  activateCloudLicense: (email: string) => void;
   checkLicense: () => void;
   regenerateMachineId: () => void;
 }
@@ -680,6 +681,18 @@ export const useStore = create<AppState>()(
           return { success: true, message: 'Licencia activada permanentemente.' };
         }
         return { success: false, message: 'PIN Maestro incorrecto.' };
+      },
+
+      activateCloudLicense: (email: string) => {
+        const state = get();
+        set({
+          license: {
+            ...state.license,
+            status: 'active',
+            activatedAt: new Date().toISOString(),
+            cloudEmail: email
+          }
+        });
       },
 
       checkLicense: () => {

@@ -6,32 +6,18 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    function isStoreOwner(storeId) {
-      return request.auth != null && storeId == request.auth.uid;
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
     }
 
-    match /stores/{storeId} {
-      allow read, write: if isStoreOwner(storeId);
-      
-      match /products/{productId} {
-        allow read, write: if isStoreOwner(storeId);
-      }
-      
-      match /sales/{saleId} {
-        allow read, write: if isStoreOwner(storeId);
-      }
-      
-      match /inventoryMovements/{movementId} {
-        allow read, write: if isStoreOwner(storeId);
-      }
-      
-      match /cashRegisters/{registerId} {
-        allow read, write: if isStoreOwner(storeId);
-      }
+    match /licenses/{licenseId} {
+      // Users can only read licenses where the email matches their verified email
+      allow get: if isSignedIn() && resource.data.email == request.auth.token.email;
+      allow list: if isSignedIn() && resource.data.email == request.auth.token.email;
 
-      match /customers/{customerId} {
-        allow read, write: if isStoreOwner(storeId);
-      }
+      // Licenses cannot be created or modified by clients.
+      // You (the admin) will create them manually from the Firebase Console or via an admin tool.
+      allow write: if false;
     }
   }
 }

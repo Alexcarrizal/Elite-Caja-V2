@@ -142,4 +142,5 @@ export interface License {
   activatedAt?: string;
   machineId: string;
   isTrialUsed: boolean;
+  cloudEmail?: string;
 }

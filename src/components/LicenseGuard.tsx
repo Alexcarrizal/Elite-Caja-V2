@@ -3,7 +3,8 @@ import { useStore } from '../store/useStore';
 import { Key, ShieldAlert, Clock, CheckCircle2, Monitor, Cloud, Sun, Moon, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { auth } from '../services/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { auth, db } from '../services/firebase';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { toast } from 'sonner';
 import { motion } from 'motion/react';
@@ -55,13 +56,40 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsCloudLoading(true);
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      toast.success('Sesión en la nube iniciada correctamente');
+      const result = await signInWithPopup(auth, provider);
       
-      if (license.status === 'none') {
-        activateTrial();
+      toast.success('Sesión iniciada correctamente');
+      
+      const user = result.user;
+      
+      // Check cloud licenses
+      const licensesRef = collection(db, "licenses");
+      const q = query(licensesRef, where("email", "==", user.email));
+      
+      // Attempt to fetch matching licenses
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const licenses = querySnapshot.docs.map(doc => doc.data());
+        const activeLicense = licenses.find(l => 
+          l.status === 'active' && 
+          (!l.validUntil || new Date(l.validUntil) > new Date())
+        );
+
+        if (activeLicense) {
+          toast.success('Licencia validada correctamente en la nube.');
+          useStore.getState().activateCloudLicense(user.email || '');
+          login('1234');
+          return;
+        } else {
+          toast.error('Tienes una licencia asociada pero ha expirado o está suspendida.', { duration: 6000 });
+          // Optional: handle auth.signOut() if you want to force them out, but we just leave them on the license screen.
+          return;
+        }
       }
-      login('1234');
+
+      toast.error(`No existe una licencia de pago vinculada al correo ${user.email}. Por favor solicita tu licencia o usa el acceso local.`, { duration: 8000 });
+
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/unauthorized-domain') {

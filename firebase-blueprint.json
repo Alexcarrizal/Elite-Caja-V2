@@ -1,150 +1,47 @@
 {
   "entities": {
-    "BusinessSettings": {
-      "title": "Business Settings",
-      "description": "Store configuration and receipt settings",
+    "License": {
+      "title": "License",
+      "description": "Represents a software license tied to a user's Google Account.",
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
-        "legalName": { "type": "string" },
-        "owner": { "type": "string" },
-        "address": { "type": "string" },
-        "phone": { "type": "string" },
-        "whatsapp": { "type": "string" },
-        "email": { "type": "string" },
-        "rfc": { "type": "string" },
-        "logo": { "type": "string" },
-        "receiptMessage": { "type": "string" },
-        "currency": { "type": "string" },
-        "taxRate": { "type": "number" },
-        "applyTax": { "type": "boolean" },
-        "acceptedPaymentMethods": {
-          "type": "array",
-          "items": { "type": "string" }
+        "email": {
+          "type": "string",
+          "description": "The user's email address matching Firebase Auth."
         },
-        "ownerId": { "type": "string" }
-      },
-      "required": ["name", "ownerId"]
-    },
-    "Product": {
-      "title": "Product",
-      "description": "Item for sale in the POS",
-      "type": "object",
-      "properties": {
-        "barcode": { "type": "string" },
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "price": { "type": "number" },
-        "cost": { "type": "number" },
-        "stock": { "type": "number" },
-        "category": { "type": "string" },
-        "tracksInventory": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["name", "price", "tracksInventory"]
-    },
-    "Customer": {
-      "title": "Customer",
-      "description": "Customer profiles",
-      "type": "object",
-      "properties": {
-        "name": { "type": "string" },
-        "email": { "type": "string" },
-        "phone": { "type": "string" },
-        "address": { "type": "string" },
-        "rfc": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["name"]
-    },
-    "Sale": {
-      "title": "Sale",
-      "description": "Transaction record",
-      "type": "object",
-      "properties": {
-        "subtotal": { "type": "number" },
-        "tax": { "type": "number" },
-        "total": { "type": "number" },
-        "paymentMethod": { "type": "string" },
-        "items": {
-          "type": "array",
-          "items": { "type": "object" }
+        "status": {
+          "type": "string",
+          "enum": ["active", "expired", "suspended"],
+          "description": "Current status of the license."
         },
-        "customerId": { "type": "string" },
-        "date": { "type": "string", "format": "date-time" },
-        "userId": { "type": "string" },
-        "userName": { "type": "string" }
+        "validUntil": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp for when the license expires, or null if lifetime."
+        },
+        "plan": {
+          "type": "string",
+          "enum": ["premium", "lifetime", "basic"],
+          "description": "The purchased plan."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       },
-      "required": ["total", "paymentMethod", "items", "date"]
-    },
-    "InventoryMovement": {
-      "title": "Inventory Movement",
-      "description": "Stock adjustments and history",
-      "type": "object",
-      "properties": {
-        "productId": { "type": "string" },
-        "productName": { "type": "string" },
-        "type": { "type": "string", "enum": ["entrada", "salida", "ajuste", "venta"] },
-        "quantity": { "type": "number" },
-        "previousStock": { "type": "number" },
-        "newStock": { "type": "number" },
-        "date": { "type": "string", "format": "date-time" },
-        "userId": { "type": "string" },
-        "userName": { "type": "string" },
-        "notes": { "type": "string" }
-      },
-      "required": ["productId", "type", "quantity", "date"]
-    },
-    "CashRegister": {
-      "title": "Cash Register",
-      "description": "Shift opening and closing records",
-      "type": "object",
-      "properties": {
-        "openedAt": { "type": "string", "format": "date-time" },
-        "closedAt": { "type": "string", "format": "date-time" },
-        "initialAmount": { "type": "number" },
-        "salesTotal": { "type": "number" },
-        "cashSales": { "type": "number" },
-        "cardSales": { "type": "number" },
-        "transferSales": { "type": "number" },
-        "mercadoPagoSales": { "type": "number" },
-        "clipSales": { "type": "number" },
-        "withdrawals": { "type": "number" },
-        "extraIncome": { "type": "number" },
-        "expectedCash": { "type": "number" },
-        "actualCash": { "type": "number" },
-        "difference": { "type": "number" },
-        "status": { "type": "string", "enum": ["open", "closed"] },
-        "movements": { "type": "array", "items": { "type": "object" } }
-      },
-      "required": ["openedAt", "initialAmount", "status"]
+      "required": ["email", "status", "createdAt", "updatedAt"]
     }
   },
   "firestore": {
-    "stores/{storeId}": {
-      "schema": { "$ref": "#/entities/BusinessSettings" },
-      "description": "The main tenant store, owned by a single user (uid == storeId)"
-    },
-    "stores/{storeId}/products/{productId}": {
-      "schema": { "$ref": "#/entities/Product" },
-      "description": "Products belonging to a store"
-    },
-    "stores/{storeId}/customers/{customerId}": {
-      "schema": { "$ref": "#/entities/Customer" },
-      "description": "Customers belonging to a store"
-    },
-    "stores/{storeId}/sales/{saleId}": {
-      "schema": { "$ref": "#/entities/Sale" },
-      "description": "Sales records"
-    },
-    "stores/{storeId}/inventoryMovements/{movementId}": {
-      "schema": { "$ref": "#/entities/InventoryMovement" },
-      "description": "Inventory changes"
-    },
-    "stores/{storeId}/cashRegisters/{registerId}": {
-      "schema": { "$ref": "#/entities/CashRegister" },
-      "description": "Cash shifts"
+    "licenses/{licenseId}": {
+      "schema": {
+        "$ref": "#/entities/License"
+      },
+      "description": "Stores user licenses, keyed by user ID or a random ID."
     }
   }
 }
