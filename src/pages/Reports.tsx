@@ -139,6 +139,19 @@ export default function Reports() {
     return Object.values(data).sort((a, b) => b.profit - a.profit).slice(0, 5);
   }, [filteredSales]);
 
+  const topSoldProducts = useMemo(() => {
+    const data: Record<string, { name: string, quantity: number, image?: string }> = {};
+    filteredSales.forEach(s => {
+      s.items.forEach(item => {
+        if (!data[item.id]) {
+          data[item.id] = { name: item.name, quantity: 0, image: item.image };
+        }
+        data[item.id].quantity += item.quantity;
+      });
+    });
+    return Object.values(data).sort((a, b) => b.quantity - a.quantity).slice(0, 5);
+  }, [filteredSales]);
+
   const lowRotationProducts = useMemo(() => {
     const salesData: Record<string, number> = {};
     filteredSales.forEach(s => {
@@ -495,6 +508,59 @@ export default function Reports() {
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {/* Top Sold Products Chart */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden p-6">
+          <div className="flex items-center space-x-2 mb-6">
+            <Package className="w-5 h-5 text-indigo-600" />
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Productos Más Vendidos (Cantidades)</h3>
+          </div>
+          <div className="h-64 flex items-center justify-center">
+            {topSoldProducts.length === 0 ? (
+              <div className="text-gray-400">No hay datos</div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={topSoldProducts} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke={theme === 'dark' ? '#374151' : '#e5e7eb'} />
+                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#9ca3af' : '#6b7280', fontSize: 12 }} />
+                  <YAxis type="category" dataKey="name" width={100} axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#9ca3af' : '#6b7280', fontSize: 12 }} />
+                  <Tooltip 
+                    cursor={{fill: theme === 'dark' ? '#374151' : '#f3f4f6'}}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} 
+                  />
+                  <Bar dataKey="quantity" name="Vendidos" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={24} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Low Rotation Products Chart */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden p-6">
+          <div className="flex items-center space-x-2 mb-6">
+            <TrendingDown className="w-5 h-5 text-red-600" />
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Productos Menos Vendidos</h3>
+          </div>
+          <div className="h-64 flex items-center justify-center">
+            {lowRotationProducts.length === 0 ? (
+              <div className="text-gray-400">No hay datos</div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={lowRotationProducts} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke={theme === 'dark' ? '#374151' : '#e5e7eb'} />
+                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#9ca3af' : '#6b7280', fontSize: 12 }} />
+                  <YAxis type="category" dataKey="name" width={100} axisLine={false} tickLine={false} tick={{ fill: theme === 'dark' ? '#9ca3af' : '#6b7280', fontSize: 12 }} />
+                  <Tooltip 
+                    cursor={{fill: theme === 'dark' ? '#374151' : '#f3f4f6'}}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} 
+                  />
+                  <Bar dataKey="soldQuantity" name="Vendidos" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={24} />
+                </BarChart>
+              </ResponsiveContainer>
             )}
           </div>
         </div>

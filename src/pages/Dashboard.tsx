@@ -173,26 +173,58 @@ export default function Dashboard() {
     return [...sales].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
   }, [sales]);
 
+  const [chartPeriod, setChartPeriod] = useState<'week' | 'month' | 'year'>('week');
+
   const chartData = useMemo(() => {
     const data: Record<string, number> = {};
-    const last7Days = Array.from({ length: 7 }).map((_, i) => {
-      const d = subDays(new Date(), 6 - i);
-      return format(d, 'dd MMM', { locale: es });
-    });
-
-    last7Days.forEach(day => data[day] = 0);
-
-    const recentSalesData = sales.filter(s => isAfter(new Date(s.date), startOfDay(subDays(new Date(), 6))));
+    const now = new Date();
     
-    recentSalesData.forEach(s => {
-      const day = format(new Date(s.date), 'dd MMM', { locale: es });
-      if (data[day] !== undefined) {
-        data[day] += s.total;
-      }
-    });
+    if (chartPeriod === 'week') {
+      const last7Days = Array.from({ length: 7 }).map((_, i) => {
+        const d = subDays(now, 6 - i);
+        return format(d, 'dd MMM', { locale: es });
+      });
+      last7Days.forEach(day => data[day] = 0);
+
+      const recentSalesData = sales.filter(s => isAfter(new Date(s.date), startOfDay(subDays(now, 6))));
+      recentSalesData.forEach(s => {
+        const day = format(new Date(s.date), 'dd MMM', { locale: es });
+        if (data[day] !== undefined) {
+          data[day] += s.total;
+        }
+      });
+    } else if (chartPeriod === 'month') {
+      const last30Days = Array.from({ length: 30 }).map((_, i) => {
+        const d = subDays(now, 29 - i);
+        return format(d, 'dd MMM', { locale: es });
+      });
+      last30Days.forEach(day => data[day] = 0);
+
+      const recentSalesData = sales.filter(s => isAfter(new Date(s.date), startOfDay(subDays(now, 29))));
+      recentSalesData.forEach(s => {
+        const day = format(new Date(s.date), 'dd MMM', { locale: es });
+        if (data[day] !== undefined) {
+          data[day] += s.total;
+        }
+      });
+    } else if (chartPeriod === 'year') {
+      const last12Months = Array.from({ length: 12 }).map((_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1);
+        return format(d, 'MMM yyyy', { locale: es });
+      });
+      last12Months.forEach(month => data[month] = 0);
+
+      const recentSalesData = sales.filter(s => isAfter(new Date(s.date), new Date(now.getFullYear(), now.getMonth() - 11, 1)));
+      recentSalesData.forEach(s => {
+        const month = format(new Date(s.date), 'MMM yyyy', { locale: es });
+        if (data[month] !== undefined) {
+          data[month] += s.total;
+        }
+      });
+    }
 
     return Object.entries(data).map(([date, total]) => ({ date, total }));
-  }, [sales]);
+  }, [sales, chartPeriod]);
 
   return (
     <motion.div 
@@ -369,10 +401,21 @@ export default function Dashboard() {
         {/* Chart */}
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Ventas (Últimos 7 días)</h3>
-            <Link to="/reports" className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">
-              Ver reporte completo
-            </Link>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Tendencias de Ingresos</h3>
+            <div className="flex items-center space-x-4">
+              <select 
+                value={chartPeriod}
+                onChange={(e) => setChartPeriod(e.target.value as any)}
+                className="text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 dark:text-gray-300"
+              >
+                <option value="week">Últimos 7 días</option>
+                <option value="month">Últimos 30 días</option>
+                <option value="year">Últimos 12 meses</option>
+              </select>
+              <Link to="/reports" className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                Ver reporte completo
+              </Link>
+            </div>
           </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
