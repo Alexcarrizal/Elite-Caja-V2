@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { BusinessSettings, Product, CartItem, Sale, CashRegister, User, InventoryMovement, Customer, Remission, License, PaymentMethodType, CashMovement } from '../types';
+import { BusinessSettings, Product, CartItem, Sale, CashRegister, User, InventoryMovement, Customer, Remission, License, PaymentMethodType, CashMovement, SuspendedSale } from '../types';
 
 import { type User as FirebaseUser } from 'firebase/auth';
 
@@ -8,6 +8,7 @@ interface AppState {
   settings: BusinessSettings;
   products: Product[];
   sales: Sale[];
+  suspendedSales: SuspendedSale[];
   remissions: Remission[];
   cashRegisters: CashRegister[];
   users: User[];
@@ -42,6 +43,9 @@ interface AppState {
   processSale: (sale: Sale) => void;
   deleteSale: (saleId: string) => void;
   loadSaleIntoCart: (saleId: string) => void;
+  suspendCart: (name: string, customerId: string) => void;
+  resumeCart: (suspendedSaleId: string) => void;
+  deleteSuspendedSale: (suspendedSaleId: string) => void;
   addRemission: (remission: Remission) => void;
   deleteRemission: (id: string) => void;
   openRegister: (initialAmount: number) => void;
@@ -115,6 +119,7 @@ export const useStore = create<AppState>()(
       products: defaultProducts,
       customers: [],
       sales: [],
+      suspendedSales: [],
       remissions: [],
       cashRegisters: [],
       users: [defaultUser],
@@ -405,6 +410,40 @@ export const useStore = create<AppState>()(
         });
       },
 
+      suspendCart: (name, customerId) => {
+        const { cart } = get();
+        if (cart.length === 0) return;
+
+        const newSuspendedSale: SuspendedSale = {
+          id: Math.random().toString(36).substr(2, 9),
+          name,
+          date: new Date().toISOString(),
+          items: [...cart],
+          customerId
+        };
+
+        set((state) => ({
+          suspendedSales: [...state.suspendedSales, newSuspendedSale],
+          cart: []
+        }));
+      },
+
+      resumeCart: (suspendedSaleId) => {
+        const saleToResume = get().suspendedSales.find((s) => s.id === suspendedSaleId);
+        if (!saleToResume) return;
+
+        set((state) => ({
+          cart: [...saleToResume.items],
+          suspendedSales: state.suspendedSales.filter(s => s.id !== suspendedSaleId)
+        }));
+      },
+
+      deleteSuspendedSale: (suspendedSaleId) => {
+        set((state) => ({
+          suspendedSales: state.suspendedSales.filter((s) => s.id !== suspendedSaleId)
+        }));
+      },
+
       addRemission: (remission) => set((state) => ({
         remissions: [...state.remissions, remission],
       })),
@@ -632,6 +671,7 @@ export const useStore = create<AppState>()(
         products: [],
         customers: [],
         sales: [],
+        suspendedSales: [],
         cashRegisters: [],
         inventoryMovements: [],
         cart: [],

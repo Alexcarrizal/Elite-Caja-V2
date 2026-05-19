@@ -48,6 +48,14 @@ export interface CartItem extends Product {
   discount: number; // Percentage or fixed amount
 }
 
+export interface SuspendedSale {
+  id: string;
+  name: string;
+  date: string;
+  items: CartItem[];
+  customerId: string;
+}
+
 export interface Sale {
   id: string;
   date: string;

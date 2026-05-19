@@ -537,11 +537,6 @@ export default function CashRegister() {
                     placeholder="0.00"
                   />
                 </div>
-                {actionType === 'close' && currentRegister && (
-                  <p className="mt-3 text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 p-3 rounded-lg">
-                    Efectivo esperado según sistema: <strong className="text-gray-900 dark:text-white">{formatCurrency(currentRegister.expectedCash, settings.currency)}</strong>
-                  </p>
-                )}
               </div>
               
               {(actionType === 'withdraw' || actionType === 'income' || actionType === 'edit_movement') && (

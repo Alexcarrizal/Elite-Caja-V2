@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useStore, defaultSettings } from '../store/useStore';
-import { Search, Plus, Minus, Trash2, CreditCard, Banknote, Smartphone, Receipt, ShoppingCart, Star, Check, Printer, ArrowRight, UserPlus, User, AlertTriangle, MessageCircle } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, CreditCard, Banknote, Smartphone, Receipt, ShoppingCart, Star, Check, Printer, ArrowRight, UserPlus, User, AlertTriangle, MessageCircle, Clock, Pause, Play } from 'lucide-react';
 import { generateReceiptPDF } from '../utils/pdf';
 import { shareReceiptWhatsApp } from '../utils/receiptImage';
 import { formatCurrency, capitalizeFirst } from '../utils/format';
@@ -10,12 +10,16 @@ import { AnimatePresence, motion } from 'motion/react';
 export default function POS() {
   const { 
     products = [], 
-    cart = [], 
+    cart = [],
+    suspendedSales = [],
     addToCart, 
     updateCartItem, 
     removeFromCart, 
     clearCart, 
-    processSale, 
+    processSale,
+    suspendCart,
+    resumeCart,
+    deleteSuspendedSale,
     settings = defaultSettings, 
     theme, 
     sales = [], 
@@ -41,6 +45,11 @@ export default function POS() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastSale, setLastSale] = useState<Sale | null>(null);
 
+  // Suspended sales state
+  const [showSuspendedModal, setShowSuspendedModal] = useState(false);
+  const [showSuspendNameModal, setShowSuspendNameModal] = useState(false);
+  const [suspendName, setSuspendName] = useState('');
+
   // Custom product state
   const [showCustomProductModal, setShowCustomProductModal] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -49,7 +58,7 @@ export default function POS() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if a modal is open
-      if (showNewCustomerModal || showCustomProductModal || showSuccessModal) return;
+      if (showNewCustomerModal || showCustomProductModal || showSuccessModal || showSuspendedModal || showSuspendNameModal) return;
 
       // If user is actively typing in an input or textarea, let the input handle it
       if (
@@ -411,12 +420,41 @@ export default function POS() {
       {/* Right side: Cart */}
       <div className="w-full lg:w-96 flex flex-col h-full bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="font-bold text-lg dark:text-white">Carrito</h2>
-          {cart.length > 0 && (
-            <button onClick={clearCart} className="text-sm text-red-500 hover:text-red-600 font-medium">
-              Vaciar
+          <div className="flex items-center gap-2">
+            <h2 className="font-bold text-lg dark:text-white">Carrito</h2>
+            {suspendedSales.length > 0 && (
+              <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full dark:bg-yellow-900 dark:text-yellow-300">
+                {suspendedSales.length}
+              </span>
+            )}
+          </div>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setShowSuspendedModal(true)} 
+              className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+              title="Ventas suspendidas"
+            >
+              <Clock className="w-5 h-5" />
             </button>
-          )}
+            {cart.length > 0 && (
+              <>
+                <button 
+                  onClick={() => setShowSuspendNameModal(true)} 
+                  className="text-gray-500 hover:text-yellow-600 dark:text-gray-400 dark:hover:text-yellow-400"
+                  title="Suspender venta actual"
+                >
+                  <Pause className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={clearCart} 
+                  className="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                  title="Vaciar carrito"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -896,6 +934,129 @@ export default function POS() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Suspend Name Modal */}
+      <AnimatePresence>
+        {showSuspendNameModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl border border-gray-100 dark:border-gray-700"
+            >
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Suspender Venta</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                Asigna un nombre para identificar esta venta más tarde (ej. "Cliente que fue al cajero").
+              </p>
+              <input
+                type="text"
+                autoFocus
+                value={suspendName}
+                onChange={(e) => setSuspendName(e.target.value)}
+                placeholder="Nombre o referencia..."
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white mb-6"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    suspendCart(suspendName || `Venta ${new Date().toLocaleTimeString()}`, selectedCustomerId);
+                    setSuspendName('');
+                    setShowSuspendNameModal(false);
+                  }
+                }}
+              />
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowSuspendNameModal(false)}
+                  className="px-4 py-2 font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    suspendCart(suspendName || `Venta ${new Date().toLocaleTimeString()}`, selectedCustomerId);
+                    setSuspendName('');
+                    setShowSuspendNameModal(false);
+                  }}
+                  className="px-6 py-2 bg-yellow-600 text-white font-bold rounded-xl hover:bg-yellow-700"
+                >
+                  Suspender
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Suspended Sales List Modal */}
+      <AnimatePresence>
+        {showSuspendedModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl flex flex-col max-h-[90vh] shadow-2xl border border-gray-100 dark:border-gray-700"
+            >
+              <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Clock className="w-6 h-6 text-yellow-500" />
+                  Ventas Suspendidas
+                </h3>
+                <button onClick={() => setShowSuspendedModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                  ✕
+                </button>
+              </div>
+              <div className="overflow-y-auto p-6 flex-1">
+                {suspendedSales.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <Clock className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                    <p>No hay ventas suspendidas.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {suspendedSales.map(sale => (
+                      <div key={sale.id} className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 border border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">{sale.name}</p>
+                          <p className="text-sm text-gray-500">{new Date(sale.date).toLocaleString()} - {sale.items.length} artículos</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              resumeCart(sale.id);
+                              setSelectedCustomerId(sale.customerId);
+                              setShowSuspendedModal(false);
+                            }}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition"
+                          >
+                            Retomar
+                          </button>
+                          <button
+                            onClick={() => deleteSuspendedSale(sale.id)}
+                            className="text-red-500 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
           </motion.div>
         )}
