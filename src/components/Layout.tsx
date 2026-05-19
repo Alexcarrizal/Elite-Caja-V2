@@ -97,6 +97,7 @@ export default function Layout() {
     } catch(e) {
       console.error('Failed to sign out of Firebase', e);
     }
+    useStore.getState().clearDatabase();
     logout();
     navigate('/login');
   };
