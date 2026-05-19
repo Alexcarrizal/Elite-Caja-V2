@@ -4,7 +4,7 @@ import { useStore, defaultSettings } from '../store/useStore';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { formatCurrency } from '../utils/format';
-import { Search, Trash2, Edit, Eye, FileText, AlertTriangle, MessageCircle, TrendingUp, DollarSign, Receipt, Banknote, Calendar, Filter, Package } from 'lucide-react';
+import { Search, Trash2, Edit, Eye, FileText, AlertTriangle, MessageCircle, TrendingUp, DollarSign, Receipt, Banknote, Calendar, Filter, Package, CornerUpLeft } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { Sale, PaymentMethodType, CashMovement } from '../types';
 
@@ -15,7 +15,8 @@ export default function SalesHistory() {
   const { 
     sales = [], 
     settings = defaultSettings, 
-    deleteSale, 
+    deleteSale,
+    returnSale,
     loadSaleIntoCart, 
     customers = [],
     cashRegisters = [],
@@ -103,6 +104,24 @@ export default function SalesHistory() {
       message: `¿Estás seguro de que deseas eliminar la venta #${sale.id}?\n\nEsta acción devolverá los productos al inventario y restará el monto de la caja actual (si está abierta).`,
       onConfirm: () => {
         deleteSale(sale.id);
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
+  const handleReturn = (sale: Sale) => {
+    if (sale.isReturn) return;
+    if (sales.some(s => s.returnedSaleId === sale.id)) {
+      alert('Esta venta ya tiene una devolución asociada.');
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Devolver Venta',
+      message: `¿Estás seguro de que deseas realizar la devolución de la venta #${sale.id}?\n\nEsta acción generará un ticket de devolución, reincorporará los productos al inventario y restará el monto de la caja.`,
+      onConfirm: () => {
+        returnSale(sale.id);
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
       }
     });
@@ -359,11 +378,14 @@ export default function SalesHistory() {
                         {sale.items.reduce((sum, item) => sum + item.quantity, 0)}
                       </td>
                       <td className="p-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                          {sale.paymentMethod}
-                        </span>
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${sale.isReturn ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
+                            {sale.isReturn ? 'Devolución' : sale.paymentMethod}
+                          </span>
+                          {sale.isReturn && <span className="text-[10px] text-gray-500">Ref: #{sale.returnedSaleId}</span>}
+                        </div>
                       </td>
-                      <td className="p-4 font-bold text-gray-900 dark:text-white">
+                      <td className={`p-4 font-bold ${sale.isReturn ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
                         {formatCurrency(sale.total, settings.currency)}
                       </td>
                       <td className="p-4 text-right space-x-2">
@@ -383,13 +405,24 @@ export default function SalesHistory() {
                             <MessageCircle className="w-5 h-5" />
                           </button>
                         )}
-                        <button
-                          onClick={() => handleEdit(sale)}
-                          className="p-2 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-lg transition-colors inline-flex"
-                          title="Modificar Venta"
-                        >
-                          <Edit className="w-5 h-5" />
-                        </button>
+                        {!sale.isReturn && (
+                          <>
+                            <button
+                              onClick={() => handleReturn(sale)}
+                              className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors inline-flex"
+                              title="Devolver Venta"
+                            >
+                              <CornerUpLeft className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleEdit(sale)}
+                              className="p-2 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-lg transition-colors inline-flex"
+                              title="Modificar Venta"
+                            >
+                              <Edit className="w-5 h-5" />
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => printReceipt(sale)}
                           className="p-2 text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors inline-flex"
@@ -397,13 +430,15 @@ export default function SalesHistory() {
                         >
                           <FileText className="w-5 h-5" />
                         </button>
-                        <button
-                          onClick={() => handleDelete(sale)}
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors inline-flex"
-                          title="Eliminar Venta"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                        {!sale.isReturn && (
+                          <button
+                            onClick={() => handleDelete(sale)}
+                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors inline-flex"
+                            title="Eliminar Venta"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -486,9 +521,9 @@ export default function SalesHistory() {
       {isViewModalOpen && selectedSale && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Detalles de Venta #{selectedSale.id}
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800">
+              <h2 className={`text-xl font-bold ${selectedSale.isReturn ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                {selectedSale.isReturn ? 'Detalles de Devolución' : 'Detalles de Venta'} #{selectedSale.id}
               </h2>
               <button 
                 onClick={() => setIsViewModalOpen(false)}

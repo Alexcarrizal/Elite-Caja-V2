@@ -42,6 +42,7 @@ interface AppState {
   clearCart: () => void;
   processSale: (sale: Sale) => void;
   deleteSale: (saleId: string) => void;
+  returnSale: (saleId: string) => void;
   loadSaleIntoCart: (saleId: string) => void;
   suspendCart: (name: string, customerId: string) => void;
   resumeCart: (suspendedSaleId: string) => void;
@@ -307,11 +308,21 @@ export const useStore = create<AppState>()(
           updatedRegister.salesTotal = (updatedRegister.salesTotal || 0) + newSale.total;
           
           // Update specific payment method totals
-          if (newSale.paymentMethod === 'Efectivo') updatedRegister.cashSales = (updatedRegister.cashSales || 0) + newSale.total;
-          if (newSale.paymentMethod === 'Tarjeta') updatedRegister.cardSales = (updatedRegister.cardSales || 0) + newSale.total;
-          if (newSale.paymentMethod === 'Transferencia') updatedRegister.transferSales = (updatedRegister.transferSales || 0) + newSale.total;
-          if (newSale.paymentMethod === 'Mercado Pago') updatedRegister.mercadoPagoSales = (updatedRegister.mercadoPagoSales || 0) + newSale.total;
-          if (newSale.paymentMethod === 'CLIP') updatedRegister.clipSales = (updatedRegister.clipSales || 0) + newSale.total;
+          if (newSale.paymentMethod === 'Mixto' && newSale.mixedPayments) {
+            newSale.mixedPayments.forEach((mp) => {
+              if (mp.method === 'Efectivo') updatedRegister.cashSales = (updatedRegister.cashSales || 0) + mp.amount;
+              else if (mp.method === 'Tarjeta') updatedRegister.cardSales = (updatedRegister.cardSales || 0) + mp.amount;
+              else if (mp.method === 'Transferencia') updatedRegister.transferSales = (updatedRegister.transferSales || 0) + mp.amount;
+              else if (mp.method === 'Mercado Pago') updatedRegister.mercadoPagoSales = (updatedRegister.mercadoPagoSales || 0) + mp.amount;
+              else if (mp.method === 'CLIP') updatedRegister.clipSales = (updatedRegister.clipSales || 0) + mp.amount;
+            });
+          } else {
+            if (newSale.paymentMethod === 'Efectivo') updatedRegister.cashSales = (updatedRegister.cashSales || 0) + newSale.total;
+            if (newSale.paymentMethod === 'Tarjeta') updatedRegister.cardSales = (updatedRegister.cardSales || 0) + newSale.total;
+            if (newSale.paymentMethod === 'Transferencia') updatedRegister.transferSales = (updatedRegister.transferSales || 0) + newSale.total;
+            if (newSale.paymentMethod === 'Mercado Pago') updatedRegister.mercadoPagoSales = (updatedRegister.mercadoPagoSales || 0) + newSale.total;
+            if (newSale.paymentMethod === 'CLIP') updatedRegister.clipSales = (updatedRegister.clipSales || 0) + newSale.total;
+          }
           
           const cashExtraIncome = (updatedRegister.movements || [])
             .filter(m => m.type === 'extra_income' && (m.paymentMethod === 'Efectivo' || !m.paymentMethod))
@@ -371,11 +382,22 @@ export const useStore = create<AppState>()(
         if (currentRegister) {
           const updatedRegister = { ...currentRegister };
           updatedRegister.salesTotal = (updatedRegister.salesTotal || 0) - saleToDelete.total;
-          if (saleToDelete.paymentMethod === 'Efectivo') updatedRegister.cashSales = (updatedRegister.cashSales || 0) - saleToDelete.total;
-          if (saleToDelete.paymentMethod === 'Tarjeta') updatedRegister.cardSales = (updatedRegister.cardSales || 0) - saleToDelete.total;
-          if (saleToDelete.paymentMethod === 'Transferencia') updatedRegister.transferSales = (updatedRegister.transferSales || 0) - saleToDelete.total;
-          if (saleToDelete.paymentMethod === 'Mercado Pago') updatedRegister.mercadoPagoSales = (updatedRegister.mercadoPagoSales || 0) - saleToDelete.total;
-          if (saleToDelete.paymentMethod === 'CLIP') updatedRegister.clipSales = (updatedRegister.clipSales || 0) - saleToDelete.total;
+          
+          if (saleToDelete.paymentMethod === 'Mixto' && saleToDelete.mixedPayments) {
+            saleToDelete.mixedPayments.forEach((mp) => {
+              if (mp.method === 'Efectivo') updatedRegister.cashSales = (updatedRegister.cashSales || 0) - mp.amount;
+              else if (mp.method === 'Tarjeta') updatedRegister.cardSales = (updatedRegister.cardSales || 0) - mp.amount;
+              else if (mp.method === 'Transferencia') updatedRegister.transferSales = (updatedRegister.transferSales || 0) - mp.amount;
+              else if (mp.method === 'Mercado Pago') updatedRegister.mercadoPagoSales = (updatedRegister.mercadoPagoSales || 0) - mp.amount;
+              else if (mp.method === 'CLIP') updatedRegister.clipSales = (updatedRegister.clipSales || 0) - mp.amount;
+            });
+          } else {
+            if (saleToDelete.paymentMethod === 'Efectivo') updatedRegister.cashSales = (updatedRegister.cashSales || 0) - saleToDelete.total;
+            if (saleToDelete.paymentMethod === 'Tarjeta') updatedRegister.cardSales = (updatedRegister.cardSales || 0) - saleToDelete.total;
+            if (saleToDelete.paymentMethod === 'Transferencia') updatedRegister.transferSales = (updatedRegister.transferSales || 0) - saleToDelete.total;
+            if (saleToDelete.paymentMethod === 'Mercado Pago') updatedRegister.mercadoPagoSales = (updatedRegister.mercadoPagoSales || 0) - saleToDelete.total;
+            if (saleToDelete.paymentMethod === 'CLIP') updatedRegister.clipSales = (updatedRegister.clipSales || 0) - saleToDelete.total;
+          }
           
           const cashExtraIncome = (updatedRegister.movements || [])
             .filter(m => m.type === 'extra_income' && (m.paymentMethod === 'Efectivo' || !m.paymentMethod))
@@ -388,6 +410,98 @@ export const useStore = create<AppState>()(
 
         return {
           sales: state.sales.filter((s) => s.id !== saleId),
+          products: updatedProducts,
+          cashRegisters: updatedRegisters,
+          inventoryMovements: [...newMovements, ...state.inventoryMovements],
+        };
+      }),
+
+      returnSale: (saleId) => set((state) => {
+        const originalSale = state.sales.find((s) => s.id === saleId);
+        if (!originalSale) return state;
+
+        if (originalSale.isReturn) return state; // Don't return a return
+        
+        // Prevent duplicate returns
+        if (state.sales.some(s => s.returnedSaleId === saleId)) {
+          alert('Esta venta ya ha sido devuelta parcialmente o en su totalidad.');
+          return state;
+        }
+
+        const newMovements: InventoryMovement[] = [];
+        
+        // Restore inventory
+        const updatedProducts = state.products.map((p) => {
+          const cartItem = originalSale.items.find((item) => item.id === p.id);
+          if (cartItem && p.tracksInventory) {
+            const newStock = p.stock + cartItem.quantity;
+            
+            if (state.currentUser) {
+              newMovements.push({
+                id: Math.random().toString(36).substr(2, 9),
+                productId: p.id,
+                productName: p.name,
+                type: 'ajuste',
+                quantity: cartItem.quantity,
+                previousStock: p.stock,
+                newStock: newStock,
+                date: new Date().toISOString(),
+                userId: state.currentUser.id,
+                userName: state.currentUser.name,
+                notes: `Devolución de Venta #${originalSale.id}`,
+              });
+            }
+            return { ...p, stock: newStock };
+          }
+          return p;
+        });
+
+        // Update current cash register if open
+        const currentRegister = state.cashRegisters.find((r) => r.status === 'open');
+        let updatedRegisters = state.cashRegisters;
+        
+        if (currentRegister) {
+          const updatedRegister = { ...currentRegister };
+          updatedRegister.salesTotal = (updatedRegister.salesTotal || 0) - originalSale.total;
+          
+          if (originalSale.paymentMethod === 'Mixto' && originalSale.mixedPayments) {
+            originalSale.mixedPayments.forEach((mp) => {
+              if (mp.method === 'Efectivo') updatedRegister.cashSales = (updatedRegister.cashSales || 0) - mp.amount;
+              else if (mp.method === 'Tarjeta') updatedRegister.cardSales = (updatedRegister.cardSales || 0) - mp.amount;
+              else if (mp.method === 'Transferencia') updatedRegister.transferSales = (updatedRegister.transferSales || 0) - mp.amount;
+              else if (mp.method === 'Mercado Pago') updatedRegister.mercadoPagoSales = (updatedRegister.mercadoPagoSales || 0) - mp.amount;
+              else if (mp.method === 'CLIP') updatedRegister.clipSales = (updatedRegister.clipSales || 0) - mp.amount;
+            });
+          } else {
+            if (originalSale.paymentMethod === 'Efectivo') updatedRegister.cashSales = (updatedRegister.cashSales || 0) - originalSale.total;
+            if (originalSale.paymentMethod === 'Tarjeta') updatedRegister.cardSales = (updatedRegister.cardSales || 0) - originalSale.total;
+            if (originalSale.paymentMethod === 'Transferencia') updatedRegister.transferSales = (updatedRegister.transferSales || 0) - originalSale.total;
+            if (originalSale.paymentMethod === 'Mercado Pago') updatedRegister.mercadoPagoSales = (updatedRegister.mercadoPagoSales || 0) - originalSale.total;
+            if (originalSale.paymentMethod === 'CLIP') updatedRegister.clipSales = (updatedRegister.clipSales || 0) - originalSale.total;
+          }
+          
+          const cashExtraIncome = (updatedRegister.movements || [])
+            .filter(m => m.type === 'extra_income' && (m.paymentMethod === 'Efectivo' || !m.paymentMethod))
+            .reduce((sum, m) => sum + m.amount, 0);
+            
+          updatedRegister.expectedCash = (updatedRegister.initialAmount || 0) + (updatedRegister.cashSales || 0) + cashExtraIncome - (updatedRegister.withdrawals || 0);
+          
+          updatedRegisters = state.cashRegisters.map((r) => r.id === currentRegister.id ? updatedRegister : r);
+        }
+
+        const returnSaleObj: Sale = {
+          ...originalSale,
+          id: Math.random().toString(36).substr(2, 9),
+          date: new Date().toISOString(),
+          subtotal: -originalSale.subtotal,
+          tax: -originalSale.tax,
+          total: -originalSale.total,
+          isReturn: true,
+          returnedSaleId: originalSale.id,
+        };
+
+        return {
+          sales: [returnSaleObj, ...state.sales],
           products: updatedProducts,
           cashRegisters: updatedRegisters,
           inventoryMovements: [...newMovements, ...state.inventoryMovements],
@@ -774,6 +888,7 @@ export const useStore = create<AppState>()(
             netProfit: true,
             monthSales: true,
             todaySales: true,
+            productCost: true,
           };
           state.settings = {
             ...defaultSettings,
@@ -789,6 +904,7 @@ export const useStore = create<AppState>()(
             netProfit: true,
             monthSales: true,
             todaySales: true,
+            productCost: true,
           };
           if (!state.products) state.products = defaultProducts;
           if (!state.users) state.users = [defaultUser];

@@ -4,8 +4,9 @@ import { Search, Plus, Minus, Trash2, CreditCard, Banknote, Smartphone, Receipt,
 import { generateReceiptPDF } from '../utils/pdf';
 import { shareReceiptWhatsApp } from '../utils/receiptImage';
 import { formatCurrency, capitalizeFirst } from '../utils/format';
-import { PaymentMethodType, Sale } from '../types';
+import { PaymentMethodType, Sale, Product } from '../types';
 import { AnimatePresence, motion } from 'motion/react';
+import BarcodeScannerModal from '../components/BarcodeScannerModal';
 
 export default function POS() {
   const { 
@@ -31,6 +32,13 @@ export default function POS() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('Efectivo');
   const [cashReceived, setCashReceived] = useState<number>(0);
   const [applyTax, setApplyTax] = useState<boolean>(settings.applyTax);
+  const [mixedPaymentValues, setMixedPaymentValues] = useState<{ method: PaymentMethodType; amount: string | number }[]>([
+    { method: 'Efectivo', amount: '' },
+    { method: 'Tarjeta', amount: '' }
+  ]);
+  const [globalDiscount, setGlobalDiscount] = useState<number | string>('');
+  const [globalDiscountType, setGlobalDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [showScannerModal, setShowScannerModal] = useState(false);
   
   // Customer states
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('mostrador');
@@ -123,11 +131,15 @@ export default function POS() {
 
   const subtotal = cart.reduce((sum, item) => {
     const price = item.salePrice;
-    const discountAmount = item.discount > 0 ? price * (item.discount / 100) : 0;
+    const discountAmount = item.discount > 0 ? (item.discountType === 'fixed' ? item.discount : price * (item.discount / 100)) : 0;
     return sum + ((price - discountAmount) * item.quantity);
   }, 0);
 
-  const tax = applyTax ? subtotal * (settings.taxRate / 100) : 0;
+  const parsedGlobalDiscount = Number(globalDiscount) || 0;
+  const globalDiscountAmount = parsedGlobalDiscount > 0 ? (globalDiscountType === 'fixed' ? parsedGlobalDiscount : subtotal * (parsedGlobalDiscount / 100)) : 0;
+  const subtotalAfterDiscount = Math.max(0, subtotal - globalDiscountAmount);
+
+  const tax = applyTax ? subtotalAfterDiscount * (settings.taxRate / 100) : 0;
   
   // Calculate commission
   let commissionAmount = 0;
@@ -147,14 +159,16 @@ export default function POS() {
     }
     
     // Commission is applied to the subtotal + tax
-    const baseForCommission = subtotal + tax;
+    const baseForCommission = subtotalAfterDiscount + tax;
     // Add IVA to the commission itself
     commissionAmount = baseForCommission * rate * (1 + (settings.taxRate / 100));
   }
 
-  const total = subtotal + tax + (commissionPayer === 'cliente' ? commissionAmount : 0);
-  const actualCashReceived = Math.max(cashReceived, total);
-  const change = actualCashReceived - total;
+  const total = subtotalAfterDiscount + tax + (commissionPayer === 'cliente' ? commissionAmount : 0);
+  
+  const mixedPaymentsTotal = mixedPaymentValues.reduce((sum, val) => sum + (Number(val.amount) || 0), 0);
+  const actualCashReceived = paymentMethod === 'Mixto' ? mixedPaymentValues.find(m => m.method === 'Efectivo')?.amount as number || 0 : Math.max(cashReceived, total);
+  const change = paymentMethod === 'Mixto' ? 0 : actualCashReceived - total;
 
   const hasOpenRegister = cashRegisters.some(r => r.status === 'open');
 
@@ -165,14 +179,21 @@ export default function POS() {
       return;
     }
 
+    if (paymentMethod === 'Mixto' && Math.abs(mixedPaymentsTotal - total) > 0.01) {
+      alert(`Los pagos mixtos deben sumar exactamente el total de la cuenta.\nFaltan/Sobran: ${formatCurrency(Math.abs(mixedPaymentsTotal - total), settings.currency)}`);
+      return;
+    }
+
     const baseSaleData = {
       id: Math.random().toString(36).substr(2, 9),
       date: new Date().toISOString(),
       items: [...cart],
-      subtotal,
+      subtotal: subtotalAfterDiscount, // store discounted subtotal or original? Original is better but keeping compatibility with subtotal fields.
       tax,
       total,
       paymentMethod,
+      globalDiscount: parsedGlobalDiscount > 0 ? parsedGlobalDiscount : undefined,
+      globalDiscountType: parsedGlobalDiscount > 0 ? globalDiscountType : undefined,
     };
 
     const customer = selectedCustomerId !== 'mostrador' ? customers.find(c => c.id === selectedCustomerId) : null;
@@ -181,6 +202,7 @@ export default function POS() {
     const saleData = {
       ...baseSaleData,
       ...(paymentMethod === 'Efectivo' && { cashReceived: actualCashReceived, change }),
+      ...(paymentMethod === 'Mixto' && { mixedPayments: mixedPaymentValues.map(mp => ({ method: mp.method, amount: Number(mp.amount) || 0 })) }),
       ...(commissionAmount > 0 && { commission: commissionAmount, commissionPayer, term: commissionTerm }),
       ...(customer && { 
         customerId: customer.id,
@@ -225,6 +247,11 @@ export default function POS() {
     setSearchTerm('');
     setPaymentMethod('Efectivo');
     setSelectedCustomerId('mostrador');
+    setGlobalDiscount('');
+    setMixedPaymentValues([
+      { method: 'Efectivo', amount: '' },
+      { method: 'Tarjeta', amount: '' }
+    ]);
   };
 
   const handleCreateCustomer = (e: React.FormEvent) => {
@@ -322,6 +349,20 @@ export default function POS() {
               autoFocus
             />
           </div>
+          <button
+            type="button"
+            onClick={() => setShowScannerModal(true)}
+            className="flex items-center justify-center p-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shrink-0"
+            title="Escanear Código de Barras"
+          >
+            <div className="w-6 h-6 flex flex-col justify-between items-center opacity-80">
+              <div className="w-full h-[3px] bg-current rounded-full"></div>
+              <div className="w-3/4 h-[3px] bg-current rounded-full"></div>
+              <div className="w-full h-[3px] bg-current rounded-full"></div>
+              <div className="w-1/2 h-[3px] bg-current rounded-full"></div>
+              <div className="w-full h-[3px] bg-current rounded-full"></div>
+            </div>
+          </button>
           <button
             type="button"
             onClick={() => setShowCustomProductModal(true)}
@@ -535,6 +576,37 @@ export default function POS() {
               <span>Subtotal</span>
               <span>{formatCurrency(subtotal, settings.currency)}</span>
             </div>
+            {/* Global Discount Block */}
+            <div className="pt-2 pb-2 border-t border-b border-gray-100 dark:border-gray-700 my-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-gray-500 dark:text-gray-400">Descuento</span>
+                <div className="flex bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden flex-1 max-w-[200px]">
+                  <select 
+                    value={globalDiscountType}
+                    onChange={(e) => setGlobalDiscountType(e.target.value as 'percentage' | 'fixed')}
+                    className="bg-transparent pl-2 pr-1 py-1 text-sm border-r border-gray-200 dark:border-gray-700 outline-none text-gray-700 dark:text-gray-300"
+                  >
+                    <option value="percentage">%</option>
+                    <option value="fixed">$</option>
+                  </select>
+                  <input 
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={globalDiscount === 0 ? '' : globalDiscount}
+                    onChange={(e) => setGlobalDiscount(e.target.value)}
+                    className="w-full bg-transparent px-2 py-1 text-sm outline-none text-gray-700 dark:text-white"
+                  />
+                </div>
+              </div>
+              {globalDiscountAmount > 0 && (
+                <div className="flex justify-between text-green-600 dark:text-green-400 mt-1">
+                  <span>Aplicado</span>
+                  <span>-{formatCurrency(globalDiscountAmount, settings.currency)}</span>
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center justify-between text-gray-500 dark:text-gray-400">
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input 
@@ -685,6 +757,67 @@ export default function POS() {
                   </span>
                 </div>
               )}
+            </div>
+          )}
+
+          {paymentMethod === 'Mixto' && (
+            <div className="mb-4 space-y-3 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-900/50 rounded-xl">
+              <h3 className="text-sm font-bold text-purple-900 dark:text-purple-400 mb-2">Desglose de Pago</h3>
+              {mixedPaymentValues.map((mp, index) => (
+                <div key={index} className="flex gap-2">
+                  <select 
+                    value={mp.method}
+                    onChange={(e) => {
+                      const newVals = [...mixedPaymentValues];
+                      newVals[index].method = e.target.value as PaymentMethodType;
+                      setMixedPaymentValues(newVals);
+                    }}
+                    className="w-1/2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
+                  >
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Tarjeta">Tarjeta</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Mercado Pago">Mercado Pago</option>
+                    <option value="CLIP">CLIP</option>
+                  </select>
+                  <div className="relative w-1/2">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                    <input 
+                      type="number"
+                      value={mp.amount}
+                      onChange={(e) => {
+                        const newVals = [...mixedPaymentValues];
+                        newVals[index].amount = e.target.value;
+                        setMixedPaymentValues(newVals);
+                      }}
+                      className="w-full pl-7 pr-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  {index > 1 && (
+                    <button 
+                      onClick={() => setMixedPaymentValues(mixedPaymentValues.filter((_, i) => i !== index))}
+                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <div className="flex justify-between items-center mt-2 pt-2 border-t border-purple-200 dark:border-purple-800">
+                <button 
+                  onClick={() => setMixedPaymentValues([...mixedPaymentValues, { method: 'Transferencia', amount: '' }])}
+                  className="text-xs font-bold text-purple-700 dark:text-purple-400 flex items-center hover:underline"
+                >
+                  <Plus className="w-3 h-3 mr-1" /> Add Método
+                </button>
+                <div className="text-right">
+                  <span className="text-xs text-purple-600 dark:text-purple-400 block">Suma Total</span>
+                  <span className={`font-bold ${Math.abs(mixedPaymentsTotal - total) > 0.01 ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}>
+                    {formatCurrency(mixedPaymentsTotal, settings.currency)}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1061,6 +1194,19 @@ export default function POS() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <BarcodeScannerModal 
+        isOpen={showScannerModal} 
+        onClose={() => setShowScannerModal(false)}
+        onScan={(decodedText) => {
+          const exactMatch = products.find(p => p.barcode && String(p.barcode).toLowerCase() === decodedText.toLowerCase());
+          if (exactMatch) {
+            handleAddToCart(exactMatch);
+          } else {
+             alert(`No se encontró ningún producto con el código de barras: ${decodedText}`);
+          }
+        }}
+      />
     </div>
   );
 }

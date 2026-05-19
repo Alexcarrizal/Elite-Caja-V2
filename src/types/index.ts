@@ -45,7 +45,8 @@ export interface Product {
 export interface CartItem extends Product {
   cartId: string;
   quantity: number;
-  discount: number; // Percentage or fixed amount
+  discount: number; // Value of the discount
+  discountType?: 'percentage' | 'fixed';
 }
 
 export interface SuspendedSale {
@@ -64,6 +65,7 @@ export interface Sale {
   tax: number;
   total: number;
   paymentMethod: PaymentMethodType;
+  mixedPayments?: { method: PaymentMethodType; amount: number }[];
   cashReceived?: number;
   change?: number;
   commission?: number;
@@ -71,6 +73,10 @@ export interface Sale {
   term?: string; // e.g., 'Contado', '3 MSI'
   customerId?: string;
   customerName?: string;
+  globalDiscount?: number;
+  globalDiscountType?: 'percentage' | 'fixed';
+  isReturn?: boolean;
+  returnedSaleId?: string;
 }
 
 export interface CashMovement {
