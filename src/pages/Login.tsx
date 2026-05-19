@@ -83,12 +83,25 @@ export default function Login() {
             </p>
 
             {firebaseUser ? (
-              <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-xl border border-green-200 dark:border-green-800 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-green-800 dark:text-green-400">Sesión iniciada</p>
-                  <p className="text-xs text-green-600 dark:text-green-500">{firebaseUser.email}</p>
+              <div className="space-y-4">
+                <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-xl border border-green-200 dark:border-green-800 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-green-800 dark:text-green-400">Sesión iniciada</p>
+                    <p className="text-xs text-green-600 dark:text-green-500">{firebaseUser.email}</p>
+                  </div>
+                  <Cloud className="w-5 h-5 text-green-500" />
                 </div>
-                <Cloud className="w-5 h-5 text-green-500" />
+                <button
+                  onClick={() => {
+                    if (login('1234')) {
+                      const hasOpenRegister = (useStore.getState().cashRegisters || []).some(r => r.status === 'open');
+                      navigate(hasOpenRegister ? '/' : '/cash-register');
+                    }
+                  }}
+                  className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  Continuar al sistema
+                </button>
               </div>
             ) : (
               <button

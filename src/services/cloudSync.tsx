@@ -114,6 +114,20 @@ export const CloudSyncProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           if (Object.keys(data).length > 0) {
             newSettings = { ...newSettings, ...data } as any;
           }
+        } else {
+          // Brand new Google account. Give them a fresh 5-day trial.
+          const now = new Date();
+          const endDate = new Date();
+          endDate.setDate(endDate.getDate() + 5);
+          
+          newLicense = {
+             machineId: newLicense.machineId || crypto.randomUUID().split('-')[0].toUpperCase(),
+             status: 'trial',
+             trialStartDate: now.toISOString(),
+             trialEndDate: endDate.toISOString(),
+             isTrialUsed: true,
+             activatedAt: now.toISOString(),
+          };
         }
 
         // Fetch collections in parallel

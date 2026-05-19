@@ -44,37 +44,12 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       
-      toast.success('Sesión iniciada correctamente');
+      toast.success('Sesión iniciada correctamente. Sincronizando datos...');
       
-      const user = result.user;
-      
-      // Check cloud licenses
-      const licensesRef = collection(db, "licenses");
-      const q = query(licensesRef, where("email", "==", user.email));
-      
-      // Attempt to fetch matching licenses
-      const querySnapshot = await getDocs(q);
-      
-      if (!querySnapshot.empty) {
-        const licenses = querySnapshot.docs.map(doc => doc.data());
-        const activeLicense = licenses.find(l => 
-          l.status === 'active' && 
-          (!l.validUntil || new Date(l.validUntil) > new Date())
-        );
-
-        if (activeLicense) {
-          toast.success('Licencia validada correctamente en la nube.');
-          useStore.getState().activateCloudLicense(user.email || '');
-          login('1234');
-          return;
-        } else {
-          toast.error('Tienes una licencia asociada pero ha expirado o está suspendida.', { duration: 6000 });
-          // Optional: handle auth.signOut() if you want to force them out, but we just leave them on the license screen.
-          return;
-        }
-      }
-
-      toast.error(`No existe una licencia de pago vinculada al correo ${user.email}. Por favor solicita tu licencia o usa el acceso local.`, { duration: 8000 });
+      // We don't manually check "licenses" collection here anymore.
+      // cloudSync.tsx will detect the new firebaseUser, download their store,
+      // and update the license (or generate a fresh 5-day trial).
+      // LicenseGuard will un-render itself once license becomes 'active' or 'trial'.
 
     } catch (err: any) {
       console.error(err);
@@ -144,7 +119,7 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
           <p className="text-center text-gray-500 dark:text-gray-400 mb-8 text-sm leading-relaxed px-2">
             {license.status === 'expired' 
               ? 'Tu periodo de prueba ha expirado. Adquiere una licencia en la nube para continuar.' 
-              : 'El sistema de venta más potente. Activa una prueba de 5 días gratis o conecta tu cuenta en la nube.'}
+              : 'El sistema de venta más potente. Inicia sesión con tu cuenta de Google para obtener 5 días de prueba gratis.'}
           </p>
 
           <div className="mb-6">
@@ -163,7 +138,7 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
                 className="w-full flex justify-center items-center py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
                 <Cloud className="w-5 h-5 mr-2 text-blue-500" />
-                {isCloudLoading ? 'Conectando...' : 'Obtener mi BD con Google'}
+                {isCloudLoading ? 'Conectando...' : 'Iniciar con Google (Prueba 5 días)'}
               </button>
             )}
           </div>
@@ -183,15 +158,7 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
             )}
 
             <div className="grid grid-cols-1 gap-3 pt-2">
-              {license.status !== 'expired' && !license.isTrialUsed && (
-                <button
-                  onClick={handleActivateTrial}
-                  className="w-full py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
-                >
-                  <Clock className="w-5 h-5" />
-                  Activar Prueba (5 días)
-                </button>
-              )}
+              {/* Force Google login for 5-day trial, removed offline trial button */}
             </div>
 
           <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
