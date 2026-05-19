@@ -33,6 +33,7 @@ function cn(...inputs: (string | undefined | null | false)[]) {
 export default function Layout() {
   const { 
     currentUser, 
+    firebaseUser,
     logout, 
     theme, 
     toggleTheme, 
@@ -144,8 +145,12 @@ export default function Layout() {
         <div className="p-4 border-t border-inherit">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
-              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold">
-                {currentUser.name.charAt(0)}
+              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold overflow-hidden">
+                {firebaseUser?.photoURL ? (
+                  <img src={firebaseUser.photoURL} alt={currentUser.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  currentUser.name.charAt(0)
+                )}
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium truncate">{currentUser.name}</p>
