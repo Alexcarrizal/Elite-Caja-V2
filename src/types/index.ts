@@ -20,6 +20,16 @@ export interface BusinessSettings {
   weekStartDay?: number; // 0 for Sunday, 1 for Monday, etc.
 }
 
+export interface Supplier {
+  id: string;
+  name: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  notes?: string;
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -31,6 +41,7 @@ export interface Product {
   id: string;
   name: string;
   category: string;
+  subcategory?: string;
   supplier: string;
   barcode: string;
   purchasePrice: number;
@@ -38,6 +49,7 @@ export interface Product {
   tracksInventory: boolean;
   stock: number;
   minStock: number;
+  expirationDate?: string; // ISO date string
   image: string; // Base64 or URL
   warranty?: string; // Optional warranty information
 }

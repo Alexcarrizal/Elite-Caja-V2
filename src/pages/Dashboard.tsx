@@ -50,6 +50,7 @@ export default function Dashboard() {
       netProfit: true,
       monthSales: true,
       todaySales: true,
+      productCost: true,
     },
     toggleDashboardVisibility
   } = useStore();

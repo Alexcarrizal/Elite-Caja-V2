@@ -20,12 +20,13 @@ export default function Inventory() {
     deleteProduct, 
     settings = defaultSettings, 
     inventoryMovements = [],
-    sales = []
+    sales = [],
+    suppliers: storeSuppliers = []
   } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-  const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'zero' | 'no_sales'>('all');
+  const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'zero' | 'no_sales' | 'expired'>('all');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const barcodeRef = useRef<HTMLDivElement>(null);
   const [barcodePdfOptions, setBarcodePdfOptions] = useState({ show: false, width: 5.0, height: 2.5, quantity: 1 });
@@ -45,13 +46,23 @@ export default function Inventory() {
     return Array.from(new Set(products.map(p => p.category).filter(Boolean))).sort();
   }, [products]);
 
+  const subcategories = useMemo(() => {
+    return Array.from(new Set(products.map(p => p.subcategory).filter(Boolean))).sort();
+  }, [products]);
+
   const suppliers = useMemo(() => {
-    return Array.from(new Set(products.map(p => p.supplier).filter(Boolean))).sort();
+    return storeSuppliers.map(s => s.name).sort();
+  }, [storeSuppliers]);
+
+  const expiredProducts = useMemo(() => {
+    const now = new Date();
+    return products.filter(p => p.expirationDate && new Date(p.expirationDate) < now);
   }, [products]);
 
   const defaultProduct: Omit<Product, 'id'> = {
     name: '',
     category: '',
+    subcategory: '',
     supplier: '',
     barcode: '',
     purchasePrice: 0,
@@ -61,6 +72,7 @@ export default function Inventory() {
     minStock: 5,
     image: '',
     warranty: '',
+    expirationDate: '',
   };
 
   const [formData, setFormData] = useState<Omit<Product, 'id'>>(defaultProduct);
@@ -101,14 +113,18 @@ export default function Inventory() {
   }, [products]);
 
   const filteredProducts = products.filter(p => {
-    if (stockFilter === 'low' && (!p.tracksInventory || p.stock > p.minStock)) return false;
+    if (stockFilter === 'low' && (!p.tracksInventory || p.stock > p.minStock || p.stock <= 0)) return false;
     if (stockFilter === 'zero' && (!p.tracksInventory || p.stock > 0)) return false;
     if (stockFilter === 'no_sales' && soldInLast30Days.has(p.id)) return false;
+    if (stockFilter === 'expired') {
+      if (!p.expirationDate || new Date(p.expirationDate) >= new Date()) return false;
+    }
 
     const term = searchTerm.toLowerCase();
     return (p.name && p.name.toLowerCase().includes(term)) || 
       (p.barcode && String(p.barcode).toLowerCase().includes(term)) ||
       (p.category && p.category.toLowerCase().includes(term)) ||
+      (p.subcategory && p.subcategory.toLowerCase().includes(term)) ||
       (p.supplier && p.supplier.toLowerCase().includes(term));
   });
 
@@ -317,7 +333,7 @@ export default function Inventory() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         <motion.button 
           whileHover={{ y: -4 }}
           onClick={() => setStockFilter('all')}
@@ -328,7 +344,7 @@ export default function Inventory() {
               <Package className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">TOTAL DEL INVENTARIO</p>
+              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">TOTAL</p>
               <h3 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mt-1">
                 {formatCurrency(totalInventoryCost, settings.currency)}
               </h3>
@@ -346,7 +362,7 @@ export default function Inventory() {
               <AlertTriangle className="w-6 h-6 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
-              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">STOCK BAJO (ARTÍCULOS)</p>
+              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">STOCK BAJO</p>
               <h3 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mt-1">
                 {lowStockProducts.length}
               </h3>
@@ -364,7 +380,7 @@ export default function Inventory() {
               <ClipboardList className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">STOCK A REPONER (EST.)</p>
+              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">A REPONER</p>
               <h3 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mt-1">
                 {formatCurrency(stockToReplenishCost, settings.currency)}
               </h3>
@@ -382,9 +398,27 @@ export default function Inventory() {
               <Clock className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">SIN VENTAS (30 DÍAS)</p>
+              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">SIN VENTAS</p>
               <h3 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mt-1">
                 {noSalesProducts.length}
+              </h3>
+            </div>
+          </div>
+        </motion.button>
+
+        <motion.button 
+          whileHover={{ y: -4 }}
+          onClick={() => setStockFilter(prev => prev === 'expired' ? 'all' : 'expired')}
+          className={`bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border ${stockFilter === 'expired' ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-900/40' : 'border-red-100 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700'} text-left flex items-center justify-between group cursor-pointer`}
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-red-50 dark:bg-red-900/30 rounded-xl group-hover:scale-110 transition-transform">
+              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">CADUCADOS</p>
+              <h3 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mt-1">
+                {expiredProducts.length}
               </h3>
             </div>
           </div>
@@ -436,21 +470,36 @@ export default function Inventory() {
                       </div>
                     </div>
                   </td>
-                  <td className="p-4 text-gray-600 dark:text-gray-300">{product.category}</td>
+                  <td className="p-4">
+                    <p className="text-gray-600 dark:text-gray-300">{product.category}</p>
+                    {product.subcategory && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{product.subcategory}</p>
+                    )}
+                  </td>
                   <td className="p-4 font-medium text-gray-900 dark:text-white">
                     {formatCurrency(product.salePrice, settings.currency)}
                   </td>
                   <td className="p-4">
                     {product.tracksInventory ? (
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        product.stock <= product.minStock 
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' 
-                          : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                      }`}>
-                        {product.stock}
-                      </span>
+                      <div className="flex flex-col items-start gap-1">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          product.stock <= product.minStock 
+                            ? product.stock <= 0 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+                            : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                        }`}>
+                          {product.stock} en stock
+                        </span>
+                        {product.expirationDate && (
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            new Date(product.expirationDate) < new Date() ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
+                          }`}>
+                            {new Date(product.expirationDate) < new Date() ? 'Caducado: ' : 'Vence: '} 
+                            {new Date(product.expirationDate).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
                     ) : (
-                      <span className="text-gray-400 dark:text-gray-500 text-sm">N/A</span>
+                      <span className="text-gray-400 dark:text-gray-500 text-sm">Servicio</span>
                     )}
                   </td>
                   <td className="p-4 text-right">
@@ -503,6 +552,10 @@ export default function Inventory() {
                     <datalist id="categories-list">
                       {categories.map(c => <option key={c} value={c} />)}
                     </datalist>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subcategoría</label>
+                    <input type="text" value={formData.subcategory || ''} onChange={e => setFormData({...formData, subcategory: capitalizeFirst(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Código de Barras</label>
@@ -582,6 +635,10 @@ export default function Inventory() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Garantía (Opcional)</label>
                     <input type="text" placeholder="Ej: 1 año, 30 días, etc." value={formData.warranty || ''} onChange={e => setFormData({...formData, warranty: capitalizeFirst(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de Caducidad (Opcional)</label>
+                    <input type="date" value={formData.expirationDate ? formData.expirationDate.split('T')[0] : ''} onChange={e => setFormData({...formData, expirationDate: e.target.value ? new Date(e.target.value).toISOString() : undefined})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
                   </div>
                 </div>
 

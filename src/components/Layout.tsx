@@ -18,7 +18,8 @@ import {
   ShieldCheck,
   Database,
   X,
-  FileText
+  FileText,
+  Building
 } from 'lucide-react';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -107,6 +108,7 @@ export default function Layout() {
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/pos', icon: ShoppingCart, label: 'Punto de Venta' },
     { to: '/inventory', icon: Package, label: 'Inventario' },
+    { to: '/suppliers', icon: Building, label: 'Proveedores' },
     { to: '/cash-register', icon: Wallet, label: 'Caja' },
     { to: '/sales', icon: ListOrdered, label: 'Historial de Ventas' },
     { to: '/remissions', icon: ClipboardList, label: 'Notas de Remisión' },

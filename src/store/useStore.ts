@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { BusinessSettings, Product, CartItem, Sale, CashRegister, User, InventoryMovement, Customer, Remission, License, PaymentMethodType, CashMovement, SuspendedSale } from '../types';
+import { BusinessSettings, Product, CartItem, Sale, CashRegister, User, InventoryMovement, Customer, Supplier, Remission, License, PaymentMethodType, CashMovement, SuspendedSale } from '../types';
 
 import { type User as FirebaseUser } from 'firebase/auth';
 
@@ -13,6 +13,7 @@ interface AppState {
   cashRegisters: CashRegister[];
   users: User[];
   customers: Customer[];
+  suppliers: Supplier[];
   currentUser: User | null;
   cart: CartItem[];
   theme: 'light' | 'dark';
@@ -62,6 +63,9 @@ interface AppState {
   addCustomer: (customer: Omit<Customer, 'id'>) => void;
   updateCustomer: (id: string, customer: Partial<Customer>) => void;
   deleteCustomer: (id: string) => void;
+  addSupplier: (supplier: Omit<Supplier, 'id'>) => void;
+  updateSupplier: (id: string, supplier: Partial<Supplier>) => void;
+  deleteSupplier: (id: string) => void;
   clearDatabase: () => void;
   
   // License Actions
@@ -119,6 +123,7 @@ export const useStore = create<AppState>()(
       settings: defaultSettings,
       products: defaultProducts,
       customers: [],
+      suppliers: [],
       sales: [],
       suspendedSales: [],
       remissions: [],
@@ -181,6 +186,18 @@ export const useStore = create<AppState>()(
 
       deleteCustomer: (id) => set((state) => ({
         customers: state.customers.filter((c) => c.id !== id),
+      })),
+
+      addSupplier: (supplier) => set((state) => ({
+        suppliers: [...state.suppliers, { ...supplier, id: Math.random().toString(36).substr(2, 9) }],
+      })),
+
+      updateSupplier: (id, updatedSupplier) => set((state) => ({
+        suppliers: state.suppliers.map((s) => (s.id === id ? { ...s, ...updatedSupplier } : s)),
+      })),
+
+      deleteSupplier: (id) => set((state) => ({
+        suppliers: state.suppliers.filter((s) => s.id !== id),
       })),
 
       updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
@@ -784,6 +801,7 @@ export const useStore = create<AppState>()(
       clearDatabase: () => set({
         products: [],
         customers: [],
+        suppliers: [],
         sales: [],
         suspendedSales: [],
         cashRegisters: [],
@@ -909,6 +927,7 @@ export const useStore = create<AppState>()(
           if (!state.products) state.products = defaultProducts;
           if (!state.users) state.users = [defaultUser];
           if (!state.customers) state.customers = [];
+          if (!state.suppliers) state.suppliers = [];
           if (!state.sales) state.sales = [];
           if (!state.remissions) state.remissions = [];
           if (!state.cashRegisters) state.cashRegisters = [];
