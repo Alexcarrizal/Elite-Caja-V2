@@ -350,12 +350,26 @@ export const useStore = create<AppState>()(
           updatedRegisters = state.cashRegisters.map((r) => r.id === currentRegister.id ? updatedRegister : r);
         }
 
+        // Update customer points
+        let updatedCustomers = state.customers;
+        if (newSale.customerId) {
+          const pointsEarned = newSale.pointsEarned || 0;
+          const pointsUsed = newSale.pointsUsed || 0;
+          updatedCustomers = state.customers.map(c => {
+            if (c.id === newSale.customerId) {
+              return { ...c, points: Math.max(0, (c.points || 0) + pointsEarned - pointsUsed) };
+            }
+            return c;
+          });
+        }
+
         return {
           sales: [...state.sales, newSale],
           products: updatedProducts,
           cart: [],
           cashRegisters: updatedRegisters,
           inventoryMovements: [...newMovements, ...state.inventoryMovements],
+          customers: updatedCustomers,
         };
       }),
 

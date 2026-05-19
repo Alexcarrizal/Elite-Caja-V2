@@ -35,6 +35,7 @@ export interface Customer {
   name: string;
   phone?: string;
   email?: string;
+  points?: number;
 }
 
 export interface Product {
@@ -89,6 +90,8 @@ export interface Sale {
   globalDiscountType?: 'percentage' | 'fixed';
   isReturn?: boolean;
   returnedSaleId?: string;
+  pointsEarned?: number;
+  pointsUsed?: number;
 }
 
 export interface CashMovement {
@@ -157,6 +160,7 @@ export interface Remission {
   folio: string;
   date: string;
   customerName: string;
+  customerId?: string;
   items: RemissionItem[];
   total: number;
   notes?: string;

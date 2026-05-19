@@ -39,6 +39,7 @@ export default function POS() {
   const [globalDiscount, setGlobalDiscount] = useState<number | string>('');
   const [globalDiscountType, setGlobalDiscountType] = useState<'percentage' | 'fixed'>('percentage');
   const [showScannerModal, setShowScannerModal] = useState(false);
+  const [pointsToUse, setPointsToUse] = useState<number | string>('');
   
   // Customer states
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('mostrador');
@@ -164,7 +165,12 @@ export default function POS() {
     commissionAmount = baseForCommission * rate * (1 + (settings.taxRate / 100));
   }
 
-  const total = subtotalAfterDiscount + tax + (commissionPayer === 'cliente' ? commissionAmount : 0);
+  const selectedCustomer = selectedCustomerId !== 'mostrador' ? customers.find(c => c.id === selectedCustomerId) : null;
+  const maxPointsAvailable = selectedCustomer?.points || 0;
+  const parsedPointsToUse = Math.min(Number(pointsToUse) || 0, maxPointsAvailable);
+
+  const totalBeforePoints = subtotalAfterDiscount + tax + (commissionPayer === 'cliente' ? commissionAmount : 0);
+  const total = Math.max(0, totalBeforePoints - parsedPointsToUse);
   
   const mixedPaymentsTotal = mixedPaymentValues.reduce((sum, val) => sum + (Number(val.amount) || 0), 0);
   const actualCashReceived = paymentMethod === 'Mixto' ? mixedPaymentValues.find(m => m.method === 'Efectivo')?.amount as number || 0 : Math.max(cashReceived, total);
@@ -184,6 +190,8 @@ export default function POS() {
       return;
     }
 
+    const pointsEarned = Math.floor(total / 100);
+
     const baseSaleData = {
       id: Math.random().toString(36).substr(2, 9),
       date: new Date().toISOString(),
@@ -194,9 +202,11 @@ export default function POS() {
       paymentMethod,
       globalDiscount: parsedGlobalDiscount > 0 ? parsedGlobalDiscount : undefined,
       globalDiscountType: parsedGlobalDiscount > 0 ? globalDiscountType : undefined,
+      pointsEarned: selectedCustomer ? pointsEarned : undefined,
+      pointsUsed: parsedPointsToUse > 0 ? parsedPointsToUse : undefined,
     };
 
-    const customer = selectedCustomerId !== 'mostrador' ? customers.find(c => c.id === selectedCustomerId) : null;
+    const customer = selectedCustomer;
 
     // Eliminate undefined to avoid Firestore errors
     const saleData = {
@@ -247,6 +257,7 @@ export default function POS() {
     setSearchTerm('');
     setPaymentMethod('Efectivo');
     setSelectedCustomerId('mostrador');
+    setPointsToUse('');
     setGlobalDiscount('');
     setMixedPaymentValues([
       { method: 'Efectivo', amount: '' },
@@ -553,7 +564,10 @@ export default function POS() {
               <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <select
                 value={selectedCustomerId}
-                onChange={(e) => setSelectedCustomerId(e.target.value)}
+                onChange={(e) => {
+                  setSelectedCustomerId(e.target.value);
+                  setPointsToUse('');
+                }}
                 className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white text-sm appearance-none"
               >
                 <option value="mostrador">Nota Mostrador</option>
@@ -576,6 +590,40 @@ export default function POS() {
               <span>Subtotal</span>
               <span>{formatCurrency(subtotal, settings.currency)}</span>
             </div>
+
+            {selectedCustomer && (
+              <div className="pt-2 pb-2 border-t border-gray-100 dark:border-gray-700 mt-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-col">
+                    <span className="text-gray-500 dark:text-gray-400 font-medium">Usar Puntos</span>
+                    <span className="text-xs text-amber-500 font-medium">Disponibles: {selectedCustomer.points || 0}</span>
+                  </div>
+                  <div className="flex bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden w-[100px]">
+                    <input 
+                      type="number"
+                      min="0"
+                      max={selectedCustomer.points || 0}
+                      placeholder="0"
+                      value={pointsToUse === 0 ? '' : pointsToUse}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        if (val <= (selectedCustomer.points || 0)) {
+                          setPointsToUse(e.target.value);
+                        }
+                      }}
+                      className="w-full bg-transparent px-2 py-1.5 text-sm outline-none text-gray-700 dark:text-white text-right"
+                    />
+                  </div>
+                </div>
+                {parsedPointsToUse > 0 && (
+                  <div className="flex justify-between text-green-600 dark:text-green-400 mt-1">
+                    <span>Descuento por Puntos</span>
+                    <span>-{formatCurrency(parsedPointsToUse, settings.currency)}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Global Discount Block */}
             <div className="pt-2 pb-2 border-t border-b border-gray-100 dark:border-gray-700 my-2">
               <div className="flex items-center justify-between gap-2">
@@ -947,9 +995,15 @@ export default function POS() {
               </div>
               
               <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">¡Venta Exitosa!</h2>
-              <p className="text-gray-400 mb-8 font-medium">
+              <p className="text-gray-400 mb-2 font-medium">
                 Total cobrado: <span className="text-emerald-400">{formatCurrency(lastSale.total, settings.currency)}</span>
               </p>
+              {lastSale.pointsEarned ? (
+                <div className="flex items-center justify-center space-x-2 text-amber-400 mb-8 font-medium">
+                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  <span>+{lastSale.pointsEarned} puntos obtenidos</span>
+                </div>
+              ) : <div className="mb-8"></div>}
               
               <div className="space-y-3 relative">
                 <button
