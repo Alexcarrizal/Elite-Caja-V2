@@ -76,6 +76,7 @@ interface AppState {
   activateCloudLicense: (email: string) => void;
   checkLicense: () => void;
   regenerateMachineId: () => void;
+  forceTrialActivation: () => { success: boolean; message: string };
 }
 
 const generateMachineId = () => {
@@ -878,6 +879,25 @@ export const useStore = create<AppState>()(
             cloudEmail: email
           }
         });
+      },
+
+      forceTrialActivation: () => {
+        const state = get();
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setDate(startDate.getDate() + 5);
+
+        const newLicense: License = {
+          ...state.license,
+          status: 'trial',
+          trialStartDate: startDate.toISOString(),
+          trialEndDate: endDate.toISOString(),
+          isTrialUsed: true,
+          activatedAt: startDate.toISOString()
+        };
+
+        set({ license: newLicense });
+        return { success: true, message: 'Prueba de 5 días re-activada correctamente.' };
       },
 
       checkLicense: () => {

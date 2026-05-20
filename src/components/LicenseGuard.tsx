@@ -5,13 +5,13 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { toast } from 'sonner';
 import { motion } from 'motion/react';
 import Logo from './Logo';
 
 export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { license, activateTrial, checkLicense, firebaseUser, theme, toggleTheme, login } = useStore();
+  const { license, activateTrial, checkLicense, firebaseUser, theme, toggleTheme, login, forceTrialActivation } = useStore();
 
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -62,6 +62,28 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } finally {
       setIsCloudLoading(false);
+    }
+  };
+
+  const handleForceTrialActivation = () => {
+    setError('');
+    setSuccess('');
+    const result = forceTrialActivation();
+    if (result.success) {
+      setSuccess(result.message);
+      toast.success(result.message);
+      login('1234');
+    } else {
+      setError(result.message);
+    }
+  };
+
+  const handleSignOutCloud = async () => {
+    try {
+      await signOut(auth);
+      toast.success('Sesión de Google cerrada');
+    } catch (err: any) {
+      toast.error('Error al cerrar sesión: ' + err.message);
     }
   };
 
@@ -124,12 +146,35 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
 
           <div className="mb-6">
             {firebaseUser ? (
-              <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-xl border border-green-200 dark:border-green-800 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-green-800 dark:text-green-400">Conectado a la nube</p>
-                  <p className="text-xs text-green-600 dark:text-green-500">{firebaseUser.email}</p>
+              <div className="space-y-4">
+                <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-xl border border-green-200 dark:border-green-800 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-green-800 dark:text-green-400">Conectado a la nube</p>
+                    <p className="text-xs text-green-600 dark:text-green-500">{firebaseUser.email}</p>
+                  </div>
+                  <Cloud className="w-5 h-5 text-green-500" />
                 </div>
-                <Cloud className="w-5 h-5 text-green-500" />
+                
+                {/* Solución a pérdida de licencia al restaurar */}
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl text-xs space-y-2 text-amber-800 dark:text-amber-200">
+                  <p className="font-bold">⚠️ ¿La licencia expiró o se perdió al restaurar tu respaldo?</p>
+                  <p className="leading-relaxed">Al importar un respaldo Offline, la base de datos local y cloud pueden haber restaurado su estado de licencia a "Ninguna". Usa el siguiente botón para reactivar de manera segura.</p>
+                </div>
+
+                <div className="flex flex-col gap-2 pt-1">
+                  <button
+                    onClick={handleForceTrialActivation}
+                    className="w-full flex justify-center items-center py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm text-sm transition-colors"
+                  >
+                    Activar / Recuperar Prueba de 5 Días
+                  </button>
+                  <button
+                    onClick={handleSignOutCloud}
+                    className="w-full flex justify-center items-center py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Cerrar Sesión de Google
+                  </button>
+                </div>
               </div>
             ) : (
               <button

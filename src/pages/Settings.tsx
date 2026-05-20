@@ -138,18 +138,27 @@ export default function Settings() {
         if (data && typeof data === 'object' && 'settings' in data && 'products' in data) {
           if (window.confirm('¿Estás seguro de que deseas sobrescribir la base de datos actual? Esta acción no se puede deshacer.')) {
             const currentLicense = useStore.getState().license;
+            const currentFirebaseUser = useStore.getState().firebaseUser;
+            const activeUser = useStore.getState().currentUser;
             const updatedData = { ...data };
-            if (updatedData.license) {
-              updatedData.license = {
-                ...updatedData.license,
-                machineId: currentLicense.machineId,
-                status: currentLicense.status,
-                trialStartDate: currentLicense.trialStartDate,
-                trialEndDate: currentLicense.trialEndDate,
-                isTrialUsed: currentLicense.isTrialUsed,
-                activatedAt: currentLicense.activatedAt
-              };
+            
+            // ALWAYS preserve the current license, machine ID and active accounts
+            updatedData.license = {
+              ...(updatedData.license || {}),
+              machineId: currentLicense.machineId,
+              status: currentLicense.status,
+              trialStartDate: currentLicense.trialStartDate,
+              trialEndDate: currentLicense.trialEndDate,
+              isTrialUsed: currentLicense.isTrialUsed,
+              activatedAt: currentLicense.activatedAt,
+              cloudEmail: currentLicense.cloudEmail || (updatedData.license ? updatedData.license.cloudEmail : '')
+            };
+            
+            updatedData.firebaseUser = currentFirebaseUser;
+            if (activeUser) {
+              updatedData.currentUser = activeUser;
             }
+            
             useStore.setState(updatedData);
             alert('Base de datos importada correctamente. La página se recargará.');
             window.location.reload();
