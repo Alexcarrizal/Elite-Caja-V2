@@ -2,13 +2,14 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useStore, defaultSettings } from '../store/useStore';
 import { Product } from '../types';
-import { Plus, Search, Edit2, Trash2, Download, Upload, Barcode as BarcodeIcon, History, Package, AlertTriangle, ClipboardList, Clock } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Download, Upload, Barcode as BarcodeIcon, History, Package, AlertTriangle, ClipboardList, Clock, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, subDays, isAfter } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { formatCurrency, capitalizeFirst } from '../utils/format';
+import { uploadImageToFirebase } from '../utils/imageUpload';
 import ReactBarcode from 'react-barcode';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -28,6 +29,7 @@ export default function Inventory() {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'zero' | 'no_sales' | 'expired'>('all');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const barcodeRef = useRef<HTMLDivElement>(null);
   const [barcodePdfOptions, setBarcodePdfOptions] = useState({ show: false, width: 5.0, height: 2.5, quantity: 1 });
 
@@ -298,14 +300,20 @@ export default function Inventory() {
     doc.save(`Reporte_Stock_${format(new Date(), 'yyyyMMdd')}.pdf`);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, image: reader.result as string });
-      };
-      reader.readAsDataURL(file);
+      try {
+        setIsUploadingImage(true);
+        const fileName = `products/${Date.now()}_${file.name}`;
+        const url = await uploadImageToFirebase(file, fileName);
+        setFormData({ ...formData, image: url });
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        alert('Error al subir la imagen. Por favor, intenta de nuevo.');
+      } finally {
+        setIsUploadingImage(false);
+      }
     }
   };
 
@@ -700,7 +708,8 @@ export default function Inventory() {
                       />
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-500 uppercase font-semibold">o subir:</span>
-                        <input type="file" accept="image/*" onChange={handleImageUpload} className="flex-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-gray-300" />
+                        <input disabled={isUploadingImage} type="file" accept="image/*" onChange={handleImageUpload} className="flex-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-gray-300 disabled:opacity-50" />
+                        {isUploadingImage && <Loader2 className="w-5 h-5 animate-spin text-blue-600" />}
                       </div>
                     </div>
                     {formData.image && (
@@ -723,7 +732,7 @@ export default function Inventory() {
                 <button type="button" onClick={handleCloseModal} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                   Cancelar
                 </button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <button type="submit" disabled={isUploadingImage} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   Guardar Producto
                 </button>
               </div>
