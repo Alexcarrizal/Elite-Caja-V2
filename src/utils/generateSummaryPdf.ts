@@ -45,8 +45,9 @@ export const generateSummaryPdf = () => {
     'Venta Rápida: Búsqueda de productos por nombre o escaneo de código de barras.',
     'Múltiples Métodos de Pago: Soporta Efectivo, Tarjeta, Transferencia, Mercado Pago, CLIP y pagos Mixtos.',
     'Gestión de Cobro: Cálculo automático de cambio y manejo de comisiones bancarias o de terminales (pudiendo asignarlas al cliente o absorberlas el vendedor).',
-    'Descuentos: Aplicación de descuentos individuales por artículo en el carrito.',
-    'Asignación de Clientes: Permite vincular una venta a un cliente específico del directorio.'
+    'Descuentos: Aplicación de descuentos globales al carrito (porcentaje o monto fijo) y descuentos individuales por artículo.',
+    'Ventas en Espera: Capacidad de poner un carrito en espera (con nombre o cliente asociado) para retomarlo más tarde sin perder los artículos.',
+    'Asignación de Clientes y Puntos: Permite vincular una venta a un cliente y utilizar sus puntos de lealtad para aplicar descuentos adicionales.'
   ]);
 
   addSection('2. Gestión de Inventario', [
@@ -75,7 +76,9 @@ export const generateSummaryPdf = () => {
   ]);
 
   addSection('6. Clientes y Usuarios', [
-    'Directorio de Clientes: Base de datos básica (nombre, teléfono, correo) para seguimiento de ventas.',
+    'Directorio de Clientes: Base de datos avanzada con información de contacto y métricas de lealtad.',
+    'Historial de Compras: Visualización detallada de todas las ventas y remisiones asociadas a cada cliente.',
+    'Programa de Lealtad (Puntos): Acumulación automática de puntos por cada compra realizada (1 punto por cada $100), canjeables en futuras compras.',
     'Control de Acceso: Sistema de inicio de sesión mediante un PIN numérico.',
     'Roles y Permisos: Soporta diferentes niveles de usuario (Administrador, Cajero, Supervisor) para proteger información sensible.'
   ]);
