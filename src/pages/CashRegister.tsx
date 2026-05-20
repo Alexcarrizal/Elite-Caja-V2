@@ -62,12 +62,10 @@ export default function CashRegister() {
   const [editingMovementId, setEditingMovementId] = useState<string | null>(null);
 
   React.useEffect(() => {
-    if ((location.state as any)?.autoOpen && !currentRegister) {
+    if (!currentRegister) {
       setActionType('open');
-      // clear the state so it doesn't reopen on reload
-      navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state, currentRegister, navigate, location.pathname]);
+  }, [currentRegister]);
 
   const handleAction = (e: React.FormEvent) => {
     e.preventDefault();
@@ -529,12 +527,11 @@ export default function CashRegister() {
                   <input
                     type="number"
                     step="0.01"
-                    required
                     autoFocus
-                    value={amount === 0 && actionType === 'open' ? 0 : amount === 0 ? '' : amount}
+                    value={amount === 0 ? '' : amount}
                     onChange={(e) => setAmount(e.target.value === '' ? 0 : Number(e.target.value))}
-                    className="w-full pl-8 pr-4 py-3 text-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white"
-                    placeholder="0.00"
+                    className="w-full pl-8 pr-4 py-3 text-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white placeholder:opacity-30 dark:placeholder:opacity-30"
+                    placeholder="0"
                   />
                 </div>
               </div>
