@@ -66,6 +66,9 @@ interface AppState {
   addSupplier: (supplier: Omit<Supplier, 'id'>) => void;
   updateSupplier: (id: string, supplier: Partial<Supplier>) => void;
   deleteSupplier: (id: string) => void;
+  addUser: (user: Omit<User, 'id'>) => void;
+  updateUser: (id: string, user: Partial<User>) => void;
+  deleteUser: (id: string) => void;
   clearDatabase: () => void;
   
   // License Actions
@@ -198,6 +201,19 @@ export const useStore = create<AppState>()(
 
       deleteSupplier: (id) => set((state) => ({
         suppliers: state.suppliers.filter((s) => s.id !== id),
+      })),
+
+      addUser: (user) => set((state) => ({
+        users: [...state.users, { ...user, id: Math.random().toString(36).substr(2, 9) }],
+      })),
+
+      updateUser: (id, updatedUser) => set((state) => ({
+        users: state.users.map((u) => (u.id === id ? { ...u, ...updatedUser } : u)),
+        currentUser: state.currentUser && state.currentUser.id === id ? { ...state.currentUser, ...updatedUser } : state.currentUser,
+      })),
+
+      deleteUser: (id) => set((state) => ({
+        users: state.users.filter((u) => u.id !== id),
       })),
 
       updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),

@@ -136,13 +136,21 @@ export const CloudSyncProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           return snap.docs.map(d => d.data());
         };
 
-        const [products, customers, sales, inventoryMovements, cashRegisters] = await Promise.all([
+        const [products, customers, sales, inventoryMovements, cashRegisters, syncedUsers] = await Promise.all([
           fetchCollection('products'),
           fetchCollection('customers'),
           fetchCollection('sales'),
           fetchCollection('inventoryMovements'),
-          fetchCollection('cashRegisters')
+          fetchCollection('cashRegisters'),
+          fetchCollection('users')
         ]);
+
+        const defaultAdmin = {
+          id: '1',
+          name: 'Admin',
+          role: 'Administrador' as const,
+          pin: '1234'
+        };
 
         // Overwrite local state entirely with cloud state
         useStore.setState({
@@ -153,6 +161,7 @@ export const CloudSyncProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           sales: sales as any,
           inventoryMovements: inventoryMovements as any,
           cashRegisters: cashRegisters as any,
+          users: syncedUsers.length > 0 ? (syncedUsers as any) : [defaultAdmin],
         });
 
         // Re-check the downloaded license to ensure it's not expired
@@ -228,6 +237,9 @@ export const CloudSyncProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
       if (state.cashRegisters !== prev.cashRegisters) {
         diffCollection('cashRegisters', state.cashRegisters, prev.cashRegisters);
+      }
+      if (state.users !== prev.users) {
+        diffCollection('users', state.users, prev.users);
       }
 
       stateRef.current = state;

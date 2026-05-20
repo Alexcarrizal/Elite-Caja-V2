@@ -8,6 +8,7 @@ import { Calendar, TrendingUp, Package, DollarSign, Download, RefreshCw, Shoppin
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useNavigate } from 'react-router-dom';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
 
@@ -17,9 +18,22 @@ export default function Reports() {
     products = [], 
     settings = defaultSettings, 
     theme,
-    cashRegisters = []
+    cashRegisters = [],
+    currentUser
   } = useStore();
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (currentUser?.role === 'Cajero') {
+      navigate('/', { replace: true });
+    }
+  }, [currentUser, navigate]);
+
   const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'year'>('week');
+
+  if (currentUser?.role === 'Cajero') {
+    return null;
+  }
 
   const filteredSales = useMemo(() => {
     const now = new Date();

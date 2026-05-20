@@ -1,22 +1,41 @@
 import React, { useState, useRef } from 'react';
 import { useStore, defaultSettings } from '../store/useStore';
-import { Save, Upload, Store, User, FileText, Settings as SettingsIcon, Download, Database, Lock, CreditCard, AlertTriangle, Trash2, Key, Monitor, Clock, CheckCircle2 } from 'lucide-react';
+import { Save, Upload, Store, User, FileText, Settings as SettingsIcon, Download, Database, Lock, CreditCard, AlertTriangle, Trash2, Key, Monitor, Clock, CheckCircle2, Edit, Eye, EyeOff } from 'lucide-react';
 import { capitalizeFirst } from '../utils/format';
 import { PaymentMethodType } from '../types';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 
 export default function Settings() {
-  const { settings = defaultSettings, updateSettings, users, currentUser, license } = useStore();
+  const { settings = defaultSettings, updateSettings, users = [], currentUser, license, addUser, updateUser, deleteUser } = useStore();
+  const navigate = useNavigate();
+
+  // Route security: Cajero role boot-out
+  React.useEffect(() => {
+    if (currentUser?.role === 'Cajero') {
+      navigate('/', { replace: true });
+    }
+  }, [currentUser, navigate]);
+
   const [formData, setFormData] = useState(settings || defaultSettings);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Users Admin states
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [userForm, setUserForm] = useState({ name: '', role: 'Cajero', pin: '' });
+  const [showPins, setShowPins] = useState<{ [key: string]: boolean }>({});
 
   // Sync form with store when settings change (e.g. after clear database or rehydration)
   React.useEffect(() => {
     setFormData(settings);
   }, [settings]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  if (currentUser?.role === 'Cajero') {
+    return null;
+  }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -27,6 +46,51 @@ export default function Settings() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleSaveUser = () => {
+    if (!userForm.name.trim()) {
+      toast.error('Por favor escribe un nombre de usuario');
+      return;
+    }
+    if (userForm.pin.length < 4) {
+      toast.error('El PIN debe tener al menos 4 dígitos numéricos');
+      return;
+    }
+    
+    // Check PIN uniqueness
+    const duplicatePin = (users || []).find(u => u.pin === userForm.pin && (!editingUser || u.id !== editingUser.id));
+    if (duplicatePin) {
+      toast.error(`Este PIN ya pertenece a ${duplicatePin.name}`);
+      return;
+    }
+
+    if (editingUser) {
+      updateUser(editingUser.id, userForm);
+      toast.success('Usuario actualizado con éxito');
+      setEditingUser(null);
+    } else {
+      addUser(userForm);
+      toast.success('Nuevo usuario registrado con éxito');
+    }
+    setUserForm({ name: '', role: 'Cajero', pin: '' });
+  };
+
+  const handleDeleteUser = (u: any) => {
+    if (u.id === currentUser?.id) {
+      toast.error('No puedes eliminarte a ti mismo mientras tienes sesión activa');
+      return;
+    }
+    
+    // Count administrators
+    const admins = (users || []).filter(user => user.role === 'Administrador');
+    if (u.role === 'Administrador' && admins.length <= 1) {
+      toast.error('Debe haber al menos un Administrador registrado en el sistema');
+      return;
+    }
+
+    deleteUser(u.id);
+    toast.success('Usuario eliminado del sistema');
   };
 
   const handlePaymentMethodToggle = (method: PaymentMethodType) => {
@@ -395,6 +459,147 @@ export default function Settings() {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Administración de Personal */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col md:col-span-2">
+          <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center space-x-3 bg-gray-50 dark:bg-gray-900/50">
+            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg text-indigo-600 dark:text-indigo-400">
+              <User className="w-5 h-5" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Administración de Cajeros y Personal</h2>
+          </div>
+          <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* List of Users */}
+            <div className="lg:col-span-2 space-y-4">
+              <h3 className="font-semibold text-gray-900 dark:text-white text-sm uppercase tracking-wider">Usuarios Registrados</h3>
+              <div className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden bg-gray-50/50 dark:bg-gray-900/20">
+                {(users || []).map((u) => {
+                  const isCur = u.id === currentUser?.id;
+                  const showPin = showPins[u.id];
+                  return (
+                    <div key={u.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2.5 bg-gray-100 dark:bg-gray-700 rounded-full text-gray-500">
+                          <User className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-gray-900 dark:text-white">{u.name}</span>
+                            {isCur && <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200 px-1.5 py-0.5 rounded-full font-bold">Tú</span>}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                              u.role === 'Administrador' ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' :
+                              u.role === 'Supervisor' ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400' :
+                              'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                            }`}>
+                              {u.role}
+                            </span>
+                            <span className="text-xs text-gray-400 font-mono">
+                              PIN: {showPin ? u.pin : '••••'}
+                            </span>
+                            <button 
+                              onClick={() => setShowPins(prev => ({ ...prev, [u.id]: !prev[u.id] }))}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                              title={showPin ? "Ocultar PIN" : "Mostrar PIN"}
+                            >
+                              {showPin ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => {
+                            setEditingUser(u);
+                            setUserForm({ name: u.name, role: u.role, pin: u.pin });
+                          }}
+                          className="p-1.5 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(u)}
+                          className="p-1.5 text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* User Form */}
+            <div className="bg-gray-50/50 dark:bg-gray-900/40 p-5 rounded-xl border border-gray-150 dark:border-gray-700/60 flex flex-col justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm uppercase tracking-wider mb-4">
+                  {editingUser ? 'Editar Personal' : 'Registrar Nuevo Personal'}
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">Nombre de usuario</label>
+                    <input 
+                      type="text" 
+                      value={userForm.name} 
+                      onChange={e => setUserForm({ ...userForm, name: capitalizeFirst(e.target.value) })} 
+                      placeholder="Ej: Juan Pérez"
+                      className="w-full p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">Rol asignado</label>
+                    <select 
+                      value={userForm.role}
+                      onChange={e => setUserForm({ ...userForm, role: e.target.value })}
+                      className="w-full p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="Cajero">Cajero (Restringido)</option>
+                      <option value="Supervisor">Supervisor (Media Privacidad)</option>
+                      <option value="Administrador">Administrador (Control Total)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">PIN numérico de acceso</label>
+                    <input 
+                      type="text" 
+                      maxLength={8}
+                      value={userForm.pin} 
+                      onChange={e => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        setUserForm({ ...userForm, pin: val });
+                      }} 
+                      placeholder="Ej: 4321 (Solo números)"
+                      className="w-full p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">Se utiliza para iniciar sesión o autorizar movimientos rápidos.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 mt-6">
+                {editingUser && (
+                  <button
+                    onClick={() => {
+                      setEditingUser(null);
+                      setUserForm({ name: '', role: 'Cajero', pin: '' });
+                    }}
+                    className="flex-1 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-650 text-sm transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                )}
+                <button
+                  onClick={handleSaveUser}
+                  className="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 text-sm transition-colors"
+                >
+                  {editingUser ? 'Actualizar' : 'Registrar'}
+                </button>
               </div>
             </div>
           </div>

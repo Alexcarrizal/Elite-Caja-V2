@@ -22,7 +22,8 @@ export default function Inventory() {
     settings = defaultSettings, 
     inventoryMovements = [],
     sales = [],
-    suppliers: storeSuppliers = []
+    suppliers: storeSuppliers = [],
+    currentUser
   } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -322,22 +323,26 @@ export default function Inventory() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Inventario</h1>
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => setIsHistoryModalOpen(true)} className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-            <History className="w-4 h-4 mr-2" />
-            Historial
-          </button>
-          <button onClick={exportToExcel} className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-            <Download className="w-4 h-4 mr-2" />
-            Excel
-          </button>
-          <button onClick={exportReplenishmentPDF} className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
-            <Download className="w-4 h-4 mr-2" />
-            Reporte Stock
-          </button>
-          <button onClick={() => handleOpenModal()} className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Producto
-          </button>
+          {currentUser?.role !== 'Cajero' && (
+            <>
+              <button onClick={() => setIsHistoryModalOpen(true)} className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                <History className="w-4 h-4 mr-2" />
+                Historial
+              </button>
+              <button onClick={exportToExcel} className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                <Download className="w-4 h-4 mr-2" />
+                Excel
+              </button>
+              <button onClick={exportReplenishmentPDF} className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                <Download className="w-4 h-4 mr-2" />
+                Reporte Stock
+              </button>
+              <button onClick={() => handleOpenModal()} className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo Producto
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -511,14 +516,16 @@ export default function Inventory() {
                     )}
                   </td>
                   <td className="p-4 text-right">
-                    <div className="flex justify-end space-x-2">
-                      <button onClick={() => handleOpenModal(product)} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button onClick={() => deleteProduct(product.id)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    {currentUser?.role !== 'Cajero' && (
+                      <div className="flex justify-end space-x-2">
+                        <button onClick={() => handleOpenModal(product)} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => deleteProduct(product.id)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

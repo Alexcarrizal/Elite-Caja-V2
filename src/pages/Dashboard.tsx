@@ -45,6 +45,7 @@ export default function Dashboard() {
     products = [], 
     settings = defaultSettings, 
     theme, 
+    currentUser,
     dashboardVisibility = {
       weekSales: true,
       netProfit: true,
@@ -243,7 +244,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className={`grid gap-6 grid-cols-1 md:grid-cols-2 ${currentUser?.role === 'Cajero' ? 'lg:grid-cols-3' : 'lg:grid-cols-5'}`}>
         <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <div className="h-12 w-12 bg-orange-50 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400">
@@ -264,45 +265,49 @@ export default function Dashboard() {
           </p>
         </motion.div>
 
-        <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <div className="h-12 w-12 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400">
-              <Wallet className="w-6 h-6" />
+        {currentUser?.role !== 'Cajero' && (
+          <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400">
+                <Wallet className="w-6 h-6" />
+              </div>
             </div>
-          </div>
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">GANANCIA NETA</p>
-            <button onClick={() => toggleDashboardVisibility('netProfit')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-              {dashboardVisibility?.netProfit !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-            </button>
-          </div>
-          <h3 className="text-3xl font-bold tracking-tight text-green-600 dark:text-green-400 mt-1">
-            {dashboardVisibility?.netProfit !== false ? formatCurrency(weekNetProfit, settings?.currency) : '••••••'}
-          </h3>
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3 flex items-center">
-            Ventas + Ingresos - Costos - Retiros
-          </p>
-        </motion.div>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">GANANCIA NETA</p>
+              <button onClick={() => toggleDashboardVisibility('netProfit')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                {dashboardVisibility?.netProfit !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              </button>
+            </div>
+            <h3 className="text-3xl font-bold tracking-tight text-green-600 dark:text-green-400 mt-1">
+              {dashboardVisibility?.netProfit !== false ? formatCurrency(weekNetProfit, settings?.currency) : '••••••'}
+            </h3>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3 flex items-center">
+              Ventas + Ingresos - Costos - Retiros
+            </p>
+          </motion.div>
+        )}
 
-        <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <div className="h-12 w-12 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400">
-              <ShoppingCart className="w-6 h-6" />
+        {currentUser?.role !== 'Cajero' && (
+          <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400">
+                <ShoppingCart className="w-6 h-6" />
+              </div>
             </div>
-          </div>
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">COSTO DE PRODUCTOS</p>
-            <button onClick={() => toggleDashboardVisibility('productCost')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-              {dashboardVisibility?.productCost !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-            </button>
-          </div>
-          <h3 className="text-3xl font-bold tracking-tight text-red-600 dark:text-red-400 mt-1">
-            {dashboardVisibility?.productCost !== false ? formatCurrency(todayProductCost, settings?.currency) : '••••••'}
-          </h3>
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3 flex items-center">
-            Costo de los productos vendidos hoy
-          </p>
-        </motion.div>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">COSTO DE PRODUCTOS</p>
+              <button onClick={() => toggleDashboardVisibility('productCost')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                {dashboardVisibility?.productCost !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              </button>
+            </div>
+            <h3 className="text-3xl font-bold tracking-tight text-red-600 dark:text-red-400 mt-1">
+              {dashboardVisibility?.productCost !== false ? formatCurrency(todayProductCost, settings?.currency) : '••••••'}
+            </h3>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3 flex items-center">
+              Costo de los productos vendidos hoy
+            </p>
+          </motion.div>
+        )}
 
         <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
@@ -347,55 +352,57 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="flex flex-wrap gap-3">
-        <button 
-          onClick={() => {
-            navigate('/inventory', { state: { openNewProductModal: true } });
-          }}
-          className="flex items-center justify-center gap-2 py-2 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] min-w-[160px]"
-        >
-          <PackagePlus className="w-5 h-5" />
-          <span className="font-bold">Nuevo Producto</span>
-        </button>
+      {currentUser?.role !== 'Cajero' && (
+        <div className="flex flex-wrap gap-3">
+          <button 
+            onClick={() => {
+              navigate('/inventory', { state: { openNewProductModal: true } });
+            }}
+            className="flex items-center justify-center gap-2 py-2 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] min-w-[160px]"
+          >
+            <PackagePlus className="w-5 h-5" />
+            <span className="font-bold">Nuevo Producto</span>
+          </button>
 
-        <button 
-          onClick={() => {
-            setAdjustmentType('entrada');
-            setIsAdjustmentModalOpen(true);
-          }}
-          className="flex items-center justify-center gap-2 py-2 px-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md shadow-emerald-200 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] min-w-[160px]"
-        >
-          <PlusCircle className="w-5 h-5" />
-          <span className="font-bold">Nueva Entrada</span>
-        </button>
+          <button 
+            onClick={() => {
+              setAdjustmentType('entrada');
+              setIsAdjustmentModalOpen(true);
+            }}
+            className="flex items-center justify-center gap-2 py-2 px-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md shadow-emerald-200 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] min-w-[160px]"
+          >
+            <PlusCircle className="w-5 h-5" />
+            <span className="font-bold">Nueva Entrada</span>
+          </button>
 
-        <button 
-          onClick={() => {
-            setAdjustmentType('salida');
-            setIsAdjustmentModalOpen(true);
-          }}
-          className="flex items-center justify-center gap-2 py-2 px-6 bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-md shadow-rose-200 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] min-w-[160px]"
-        >
-          <MinusCircle className="w-5 h-5" />
-          <span className="font-bold">Nueva Salida</span>
-        </button>
+          <button 
+            onClick={() => {
+              setAdjustmentType('salida');
+              setIsAdjustmentModalOpen(true);
+            }}
+            className="flex items-center justify-center gap-2 py-2 px-6 bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-md shadow-rose-200 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] min-w-[160px]"
+          >
+            <MinusCircle className="w-5 h-5" />
+            <span className="font-bold">Nueva Salida</span>
+          </button>
 
-        <button 
-          onClick={() => setIsReplenishModalOpen(true)}
-          className="flex items-center justify-center gap-2 py-2 px-6 bg-[#ff6b00] hover:bg-[#e66000] text-white rounded-xl shadow-md shadow-orange-200 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] min-w-[160px]"
-        >
-          <ClipboardList className="w-5 h-5" />
-          <span className="font-bold">Reponer Stock</span>
-        </button>
+          <button 
+            onClick={() => setIsReplenishModalOpen(true)}
+            className="flex items-center justify-center gap-2 py-2 px-6 bg-[#ff6b00] hover:bg-[#e66000] text-white rounded-xl shadow-md shadow-orange-200 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] min-w-[160px]"
+          >
+            <ClipboardList className="w-5 h-5" />
+            <span className="font-bold">Reponer Stock</span>
+          </button>
 
-        <button 
-          onClick={() => setIsLessSoldModalOpen(true)}
-          className="flex items-center justify-center gap-2 py-2 px-6 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-md shadow-red-200 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] min-w-[160px]"
-        >
-          <TrendingDown className="w-5 h-5" />
-          <span className="font-bold">Menos Vendidos</span>
-        </button>
-      </div>
+          <button 
+            onClick={() => setIsLessSoldModalOpen(true)}
+            className="flex items-center justify-center gap-2 py-2 px-6 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-md shadow-red-200 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] min-w-[160px]"
+          >
+            <TrendingDown className="w-5 h-5" />
+            <span className="font-bold">Menos Vendidos</span>
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart */}

@@ -127,21 +127,28 @@ export default function Layout() {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => cn(
-                "flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                isActive 
-                  ? "bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200" 
-                  : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/50"
-              )}
-            >
-              <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
-              {item.label}
-            </NavLink>
-          ))}
+          {navItems
+            .filter((item) => {
+              if (currentUser?.role === 'Cajero') {
+                return !['/suppliers', '/remissions', '/reports', '/settings'].includes(item.to);
+              }
+              return true;
+            })
+            .map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) => cn(
+                  "flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                  isActive 
+                    ? "bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200" 
+                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/50"
+                )}
+              >
+                <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                {item.label}
+              </NavLink>
+            ))}
         </nav>
 
         <div className="p-4 border-t border-inherit">

@@ -6,16 +6,30 @@ import { es } from 'date-fns/locale';
 import { formatCurrency } from '../utils/format';
 import { Remission, RemissionItem } from '../types';
 import { jsPDF } from 'jspdf';
+import { useNavigate } from 'react-router-dom';
 
 export default function Remissions() {
   const { 
     remissions = [], 
     addRemission, 
     deleteRemission, 
-    settings = defaultSettings 
+    settings = defaultSettings,
+    currentUser
   } = useStore();
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (currentUser?.role === 'Cajero') {
+      navigate('/', { replace: true });
+    }
+  }, [currentUser, navigate]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+
+  if (currentUser?.role === 'Cajero') {
+    return null;
+  }
   
   // New Remission State
   const [customerName, setCustomerName] = useState('');

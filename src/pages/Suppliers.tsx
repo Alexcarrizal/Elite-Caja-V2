@@ -2,12 +2,25 @@ import React, { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { Search, Plus, Edit, Trash2, Phone, Mail, Building, FileText, AlertTriangle } from 'lucide-react';
 import { Supplier } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 export default function Suppliers() {
-  const { suppliers = [], addSupplier, updateSupplier, deleteSupplier } = useStore();
+  const { suppliers = [], addSupplier, updateSupplier, deleteSupplier, currentUser } = useStore();
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (currentUser?.role === 'Cajero') {
+      navigate('/', { replace: true });
+    }
+  }, [currentUser, navigate]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+
+  if (currentUser?.role === 'Cajero') {
+    return null;
+  }
   const [formData, setFormData] = useState({
     name: '',
     contactName: '',
