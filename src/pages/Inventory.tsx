@@ -700,10 +700,20 @@ export default function Inventory() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Precio Compra</label>
                       <input type="number" step="0.01" value={formData.purchasePrice} onChange={e => setFormData({...formData, purchasePrice: Number(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ganancia *</label>
+                      <input type="number" step="0.01" placeholder="Ej: 5.00" value={formData.salePrice > 0 || formData.purchasePrice > 0 ? Number((formData.salePrice - formData.purchasePrice).toFixed(2)) : ''} onChange={e => {
+                        const gain = Number(e.target.value);
+                        setFormData({
+                          ...formData,
+                          salePrice: Number((formData.purchasePrice + gain).toFixed(2))
+                        });
+                      }} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white bg-blue-50/50 dark:bg-blue-900/10 focus:ring-2 focus:ring-blue-500 font-semibold text-blue-900 dark:text-blue-200" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Precio Venta *</label>
