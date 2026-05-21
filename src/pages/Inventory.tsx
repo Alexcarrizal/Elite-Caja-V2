@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useStore, defaultSettings } from '../store/useStore';
 import { Product } from '../types';
-import { Plus, Search, Edit2, Trash2, Download, Upload, Barcode as BarcodeIcon, History, Package, AlertTriangle, ClipboardList, Clock, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Download, Upload, Barcode as BarcodeIcon, History, Package, AlertTriangle, ClipboardList, Clock, Loader2, Sparkles } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -42,6 +42,37 @@ export default function Inventory() {
     const saved = localStorage.getItem('usd_exchange_rate');
     return saved ? Number(saved) : 20.00;
   });
+  const [isFetchingRate, setIsFetchingRate] = useState<boolean>(false);
+
+  const fetchExchangeRate = async (currencyCode: string) => {
+    if (!currencyCode || currencyCode === 'USD') return;
+    setIsFetchingRate(true);
+    try {
+      const response = await fetch('/api/exchange-rate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ currency: currencyCode })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data && typeof data.rate === 'number') {
+          setExchangeRate(data.rate);
+          if (purchasePriceUSD !== '') {
+            setFormData(prev => ({
+              ...prev,
+              purchasePrice: Number((Number(purchasePriceUSD) * data.rate).toFixed(2))
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching exchange rate:', error);
+    } finally {
+      setIsFetchingRate(false);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('usd_exchange_rate', exchangeRate.toString());
@@ -814,6 +845,7 @@ export default function Inventory() {
                             if (formData.purchasePrice > 0) {
                               setPurchasePriceUSD(Number((formData.purchasePrice / exchangeRate).toFixed(2)));
                             }
+                            fetchExchangeRate(settings.currency);
                           }}
                           className={`px-2 py-0.5 rounded-md transition-all ${isUSDEnabled ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}`}
                         >
@@ -864,8 +896,22 @@ export default function Inventory() {
 
                         {/* Tipo de Cambio del día */}
                         <div>
-                          <label className="block text-[11px] font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider mb-1">
-                            Tipo Cambio
+                          <label className="block text-[11px] font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider mb-1 flex items-center justify-between">
+                            <span>Tipo Cambio</span>
+                            <button
+                              type="button"
+                              onClick={() => fetchExchangeRate(settings.currency)}
+                              disabled={isFetchingRate}
+                              className="text-[9px] bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 active:bg-amber-500/35 px-1.5 py-0.5 rounded flex items-center gap-0.5 border border-amber-500/20 font-bold cursor-pointer disabled:opacity-50 transition-all"
+                              title="Calcular tipo de cambio de hoy con Inteligencia Artificial"
+                            >
+                              {isFetchingRate ? (
+                                <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                              ) : (
+                                <Sparkles className="w-2.5 h-2.5 text-amber-500 animate-pulse" />
+                              )}
+                              <span>{isFetchingRate ? 'Consultando...' : 'Consultar IA'}</span>
+                            </button>
                           </label>
                           <div className="relative rounded-lg shadow-sm">
                             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5">
