@@ -609,7 +609,10 @@ export default function Inventory() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subcategoría</label>
-                    <input type="text" value={formData.subcategory || ''} onChange={e => setFormData({...formData, subcategory: capitalizeFirst(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+                    <input list="subcategories-list" type="text" value={formData.subcategory || ''} onChange={e => setFormData({...formData, subcategory: capitalizeFirst(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+                    <datalist id="subcategories-list">
+                      {subcategories.map(s => <option key={s} value={s} />)}
+                    </datalist>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Código de Barras</label>
