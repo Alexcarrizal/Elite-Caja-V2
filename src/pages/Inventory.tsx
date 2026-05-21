@@ -38,6 +38,7 @@ export default function Inventory() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isUSDEnabled, setIsUSDEnabled] = useState<boolean>(false);
   const [purchasePriceUSD, setPurchasePriceUSD] = useState<number | ''>('');
+  const [salePriceUSD, setSalePriceUSD] = useState<number | ''>('');
   const [exchangeRate, setExchangeRate] = useState<number>(() => {
     const saved = localStorage.getItem('usd_exchange_rate');
     return saved ? Number(saved) : 20.00;
@@ -50,6 +51,20 @@ export default function Inventory() {
     setIsFetchingRate(true);
     setRateStatus({ status: 'idle', message: 'Consultando tipo de cambio real...' });
     
+    const applyRate = (rate: number) => {
+      setExchangeRate(Number(rate.toFixed(4)));
+      setFormData(prev => {
+        const next = { ...prev };
+        if (purchasePriceUSD !== '') {
+          next.purchasePrice = Number((Number(purchasePriceUSD) * rate).toFixed(2));
+        }
+        if (salePriceUSD !== '') {
+          next.salePrice = Number((Number(salePriceUSD) * rate).toFixed(2));
+        }
+        return next;
+      });
+    };
+
     // Primero, hacemos un fetch a la API pública oficial y gratuita de tipo de cambio (open.er-api.com)
     // que cuenta con CORS habilitado públicamente y es instantánea y verídica para el mercado mexicano.
     try {
@@ -59,13 +74,7 @@ export default function Inventory() {
         if (data && data.result === 'success' && data.rates) {
           const rate = data.rates[currencyCode];
           if (typeof rate === 'number' && !isNaN(rate)) {
-            setExchangeRate(Number(rate.toFixed(4)));
-            if (purchasePriceUSD !== '') {
-              setFormData(prev => ({
-                ...prev,
-                purchasePrice: Number((Number(purchasePriceUSD) * rate).toFixed(2))
-              }));
-            }
+            applyRate(rate);
             setRateStatus({
               status: 'success',
               message: `Tipo de cambio obtenido de hoy en vivo para ${currencyCode}.`,
@@ -111,13 +120,7 @@ export default function Inventory() {
             const parsed = JSON.parse(responseText.trim());
             const rate = parsed.rate;
             if (typeof rate === 'number' && !isNaN(rate) && rate > 0) {
-              setExchangeRate(Number(rate.toFixed(4)));
-              if (purchasePriceUSD !== '') {
-                setFormData(prev => ({
-                  ...prev,
-                  purchasePrice: Number((Number(purchasePriceUSD) * rate).toFixed(2))
-                }));
-              }
+              applyRate(rate);
               setRateStatus({
                 status: 'success',
                 message: `Tipo de cambio calculado por IA Gemini de hoy para ${currencyCode}.`,
@@ -145,13 +148,7 @@ export default function Inventory() {
     };
     
     const fallback = defaultRates[currencyCode] || 20.00;
-    setExchangeRate(fallback);
-    if (purchasePriceUSD !== '') {
-      setFormData(prev => ({
-        ...prev,
-        purchasePrice: Number((Number(purchasePriceUSD) * fallback).toFixed(2))
-      }));
-    }
+    applyRate(fallback);
     setRateStatus({
       status: 'success',
       message: `Tipo de cambio estimado para ${currencyCode}.`,
@@ -263,6 +260,7 @@ export default function Inventory() {
   const handleOpenModal = (product?: Product) => {
     setIsUSDEnabled(false);
     setPurchasePriceUSD('');
+    setSalePriceUSD('');
     setRateStatus({ status: 'idle', message: '' });
     if (product) {
       setEditingProduct(product);
@@ -286,6 +284,7 @@ export default function Inventory() {
     setEditingProduct(null);
     setIsUSDEnabled(false);
     setPurchasePriceUSD('');
+    setSalePriceUSD('');
     setRateStatus({ status: 'idle', message: '' });
     setFormData({
       ...defaultProduct,
@@ -933,6 +932,9 @@ export default function Inventory() {
                             if (formData.purchasePrice > 0) {
                               setPurchasePriceUSD(Number((formData.purchasePrice / exchangeRate).toFixed(2)));
                             }
+                            if (formData.salePrice > 0) {
+                              setSalePriceUSD(Number((formData.salePrice / exchangeRate).toFixed(2)));
+                            }
                             fetchExchangeRate(settings.currency);
                           }}
                           className={`px-2 py-0.5 rounded-md transition-all ${isUSDEnabled ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}`}
@@ -944,48 +946,87 @@ export default function Inventory() {
 
                     {/* USD inputs if enabled */}
                     {isUSDEnabled && (
-                      <div className="grid grid-cols-2 gap-4 p-3 bg-blue-50/10 dark:bg-blue-950/20 rounded-lg border border-blue-100/50 dark:border-blue-900/20">
-                        {/* Costo en USD */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider mb-1">
-                            Costo USD ($)
-                          </label>
-                          <div className="relative rounded-lg shadow-sm">
-                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5">
-                              <span className="text-blue-600 dark:text-blue-400 text-xs font-bold">$</span>
+                      <div className="p-3 bg-blue-50/10 dark:bg-blue-950/20 rounded-lg border border-blue-100/50 dark:border-blue-900/20 space-y-3">
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* Costo en USD */}
+                          <div>
+                            <label className="block text-[11px] font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider mb-1">
+                              Costo USD ($)
+                            </label>
+                            <div className="relative rounded-lg shadow-sm">
+                              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5">
+                                <span className="text-blue-600 dark:text-blue-400 text-xs font-bold">$</span>
+                              </div>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={purchasePriceUSD || ''}
+                                onChange={e => {
+                                  const usdVal = e.target.value === '' ? '' : Number(e.target.value);
+                                  setPurchasePriceUSD(usdVal);
+                                  if (usdVal !== '') {
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      purchasePrice: Number((usdVal * exchangeRate).toFixed(2))
+                                    }));
+                                  } else {
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      purchasePrice: 0
+                                    }));
+                                  }
+                                }}
+                                className="block w-full rounded-lg border-blue-200 dark:border-blue-900 pl-6 p-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-xs font-semibold"
+                                placeholder="0.00"
+                              />
+                              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                <span className="text-[10px] bg-blue-50 dark:bg-blue-950 rounded px-1 py-0.5 text-blue-600 font-bold">USD</span>
+                              </div>
                             </div>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={purchasePriceUSD || ''}
-                              onChange={e => {
-                                const usdVal = e.target.value === '' ? '' : Number(e.target.value);
-                                setPurchasePriceUSD(usdVal);
-                                if (usdVal !== '') {
-                                  setFormData({
-                                    ...formData,
-                                    purchasePrice: Number((usdVal * exchangeRate).toFixed(2))
-                                  });
-                                } else {
-                                  setFormData({
-                                    ...formData,
-                                    purchasePrice: 0
-                                  });
-                                }
-                              }}
-                              className="block w-full rounded-lg border-blue-200 dark:border-blue-900 pl-6 p-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-xs font-semibold"
-                              placeholder="0.00"
-                            />
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                              <span className="text-[10px] bg-blue-50 dark:bg-blue-950 rounded px-1 py-0.5 text-blue-600 font-bold">USD</span>
+                          </div>
+
+                          {/* Venta en USD */}
+                          <div>
+                            <label className="block text-[11px] font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider mb-1">
+                              Venta USD ($)
+                            </label>
+                            <div className="relative rounded-lg shadow-sm">
+                              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5">
+                                <span className="text-blue-600 dark:text-blue-400 text-xs font-bold">$</span>
+                              </div>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={salePriceUSD || ''}
+                                onChange={e => {
+                                  const usdVal = e.target.value === '' ? '' : Number(e.target.value);
+                                  setSalePriceUSD(usdVal);
+                                  if (usdVal !== '') {
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      salePrice: Number((usdVal * exchangeRate).toFixed(2))
+                                    }));
+                                  } else {
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      salePrice: 0
+                                    }));
+                                  }
+                                }}
+                                className="block w-full rounded-lg border-blue-200 dark:border-blue-900 pl-6 p-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-xs font-semibold"
+                                placeholder="0.00"
+                              />
+                              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                <span className="text-[10px] bg-blue-50 dark:bg-blue-950 rounded px-1 py-0.5 text-blue-600 font-bold">USD</span>
+                              </div>
                             </div>
                           </div>
                         </div>
 
                         {/* Tipo de Cambio del día */}
-                        <div>
+                        <div className="border-t border-blue-100/30 dark:border-blue-900/10 pt-2.5">
                           <label className="block text-[11px] font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider mb-1 flex items-center justify-between">
-                            <span>Tipo Cambio</span>
+                            <span>Tipo de Cambio</span>
                             <button
                               type="button"
                               onClick={() => fetchExchangeRate(settings.currency)}
@@ -1012,12 +1053,16 @@ export default function Inventory() {
                               onChange={e => {
                                 const rateVal = Number(e.target.value);
                                 setExchangeRate(rateVal);
-                                if (purchasePriceUSD !== '') {
-                                  setFormData({
-                                    ...formData,
-                                    purchasePrice: Number((purchasePriceUSD * rateVal).toFixed(2))
-                                  });
-                                }
+                                setFormData(prev => {
+                                  const next = { ...prev };
+                                  if (purchasePriceUSD !== '') {
+                                    next.purchasePrice = Number((Number(purchasePriceUSD) * rateVal).toFixed(2));
+                                  }
+                                  if (salePriceUSD !== '') {
+                                    next.salePrice = Number((Number(salePriceUSD) * rateVal).toFixed(2));
+                                  }
+                                  return next;
+                                });
                               }}
                               className="block w-full rounded-lg border-blue-200 dark:border-blue-900 pl-8 p-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-xs font-semibold"
                               placeholder="20.00"
@@ -1026,7 +1071,7 @@ export default function Inventory() {
 
                           {/* Estado de consulta de IA / Divisas */}
                           {rateStatus.status !== 'idle' && (
-                            <div className={`mt-1 text-[10px] p-1.5 rounded flex flex-col gap-0.5 font-semibold ${
+                            <div className={`mt-1.5 text-[10px] p-1.5 rounded flex flex-col gap-0.5 font-semibold ${
                               rateStatus.status === 'success' 
                                 ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/15' 
                                 : rateStatus.status === 'error'
@@ -1079,8 +1124,9 @@ export default function Inventory() {
 
                       {/* Precio de Venta */}
                       <div>
-                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                          Precio Venta ({settings.currency}) *
+                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 flex justify-between">
+                          <span>Precio Venta ({settings.currency}) *</span>
+                          {isUSDEnabled && <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold lowercase italic">convertido</span>}
                         </label>
                         <div className="relative rounded-lg shadow-sm">
                           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -1091,8 +1137,14 @@ export default function Inventory() {
                             type="number"
                             step="0.01"
                             value={formData.salePrice || ''}
-                            onChange={e => setFormData({...formData, salePrice: Number(e.target.value)})}
-                            className="block w-full rounded-lg border-gray-300 dark:border-gray-600 pl-7 p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm font-bold"
+                            onChange={e => {
+                              const val = Number(e.target.value);
+                              setFormData({...formData, salePrice: val});
+                              if (isUSDEnabled && exchangeRate > 0) {
+                                setSalePriceUSD(Number((val / exchangeRate).toFixed(2)));
+                              }
+                            }}
+                            className={`block w-full rounded-lg border-gray-300 dark:border-gray-600 pl-7 p-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm font-bold ${isUSDEnabled ? 'bg-emerald-50/10 dark:bg-emerald-950/10 border-emerald-300 dark:border-emerald-800' : 'bg-white dark:bg-gray-700'}`}
                             placeholder="0.00"
                           />
                         </div>
