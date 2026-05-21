@@ -848,7 +848,7 @@ export const useStore = create<AppState>()(
         return { theme: newTheme };
       }),
 
-      clearDatabase: () => set({
+      clearDatabase: () => set((state) => ({
         products: [],
         customers: [],
         suppliers: [],
@@ -858,12 +858,10 @@ export const useStore = create<AppState>()(
         inventoryMovements: [],
         cart: [],
         settings: defaultSettings,
-        license: {
-          status: 'none',
-          machineId: generateMachineId(),
-          isTrialUsed: false
-        }
-      }),
+        users: state.users,
+        currentUser: state.currentUser,
+        license: state.license
+      })),
 
       activateTrial: () => {
         const state = get();
