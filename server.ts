@@ -31,51 +31,106 @@ async function startServer() {
 
       const targetCurrency = String(currency).toUpperCase().trim();
       if (targetCurrency === "USD") {
-        return res.json({ rate: 1.0 });
+        return res.json({ rate: 1.0, source: "direct" });
       }
 
-      // Check if API key is provided
-      if (!process.env.GEMINI_API_KEY) {
-        console.warn("GEMINI_API_KEY not configured on the server. Returning default fallback.");
-        const fallbackRate = targetCurrency === "MXN" ? 20.00 : 1.0;
-        return res.json({ rate: fallbackRate, isFallback: true, message: "GEMINI_API_KEY no configurado." });
-      }
-
-      const prompt = `Calcula o busca en internet de forma precisa el tipo de cambio del dia de hoy para 1 dólar estadounidense (USD) expresado en la divisa ${targetCurrency}. Responde en formato JSON con la clave 'rate' indicando el valor numérico decimal de equivalencia.`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }],
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              rate: {
-                type: Type.NUMBER,
-                description: `El factor de conversión de 1 USD a ${targetCurrency}`
-              }
-            },
-            required: ["rate"]
+      // 1. First Attempt: Real exchange rate API (Highly reliable, fast, active)
+      try {
+        console.log(`Intentando consultar API de tipo de cambio directa para ${targetCurrency}...`);
+        const apiResponse = await fetch("https://open.er-api.com/v6/latest/USD");
+        if (apiResponse.ok) {
+          const apiData = await apiResponse.json();
+          if (apiData && apiData.result === "success" && apiData.rates) {
+            const rawRate = apiData.rates[targetCurrency];
+            if (typeof rawRate === "number" && !isNaN(rawRate)) {
+              console.log(`Tipo de cambio obtenido con éxito desde API externa para ${targetCurrency}: ${rawRate}`);
+              return res.json({ 
+                rate: Number(rawRate.toFixed(4)), 
+                source: "exchange_api",
+                message: `Tipo de cambio obtenido del día para ${targetCurrency}.`
+              });
+            }
           }
         }
+      } catch (err) {
+        console.warn("La API externa de tipo de cambio falló o no está disponible. Intentando con Inteligencia Artificial...", err);
+      }
+
+      // 2. Second Attempt: Gemini AI Model with Search Grounding
+      if (process.env.GEMINI_API_KEY) {
+        try {
+          console.log(`Consultando tipo de cambio con Inteligencia Artificial (Gemini) para ${targetCurrency}...`);
+          const prompt = `Calcula o busca en internet el tipo de cambio del día de hoy exacto y actual para un dólar estadounidense (1 USD) expresado en la divisa ${targetCurrency}. Responde estrictamente con un objeto JSON válido que contenga la propiedad "rate" con el número correspondiente.`;
+
+          const response = await ai.models.generateContent({
+            model: "gemini-3.5-flash",
+            contents: prompt,
+            config: {
+              tools: [{ googleSearch: {} }],
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  rate: {
+                    type: Type.NUMBER,
+                    description: `El valor de conversión de 1 USD a ${targetCurrency}`
+                  }
+                },
+                required: ["rate"]
+              }
+            }
+          });
+
+          const text = response.text;
+          if (text) {
+            const data = JSON.parse(text.trim());
+            if (typeof data.rate === "number" && !isNaN(data.rate) && data.rate > 0) {
+              console.log(`Tipo de cambio obtenido de Gemini para ${targetCurrency}: ${data.rate}`);
+              return res.json({ 
+                rate: Number(data.rate.toFixed(4)), 
+                source: "gemini_ai",
+                message: `Tipo de cambio obtenido con IA (Gemini) para ${targetCurrency}.`
+              });
+            }
+          }
+        } catch (geminiErr: any) {
+          console.error("Fallo la llamada de la IA para obtener tipo de cambio:", geminiErr);
+        }
+      } else {
+        console.warn("GEMINI_API_KEY no definida en el servidor. Pasando a valores de reserva locales.");
+      }
+
+      // 3. Third Attempt: Guess localized default fallback rates
+      console.log(`Usando de tipo de cambio estático local de reserva para ${targetCurrency}...`);
+      const defaultRates: Record<string, number> = {
+        MXN: 20.00,
+        COP: 4100.00,
+        ARS: 900.00,
+        CLP: 950.00,
+        PEN: 3.75,
+        UYU: 39.00,
+        BOB: 6.90,
+        CRC: 512.00,
+        DOP: 59.00,
+        GTQ: 7.80,
+        HNL: 24.70,
+        NIO: 36.80,
+        PAB: 1.00,
+        PYG: 7500.00,
+        VES: 36.50,
+        EUR: 0.92,
+      };
+
+      const fallbackRate = defaultRates[targetCurrency] || 1.0;
+      return res.json({ 
+        rate: fallbackRate, 
+        source: "local_cache", 
+        message: "Se usó un valor de referencia debido a desconexión del servidor en vivo." 
       });
 
-      const text = response.text;
-      if (!text) {
-        throw new Error("No se recibió respuesta de Gemini.");
-      }
-
-      const data = JSON.parse(text.trim());
-      if (typeof data.rate !== "number" || isNaN(data.rate)) {
-        throw new Error(`Invalid format returned: ${JSON.stringify(data)}`);
-      }
-
-      res.json({ rate: data.rate });
     } catch (error: any) {
-      console.error("Error fetching exchange rate from Gemini:", error);
-      res.status(500).json({ error: error.message || "Failed to fetch exchange rate" });
+      console.error("Error definitivo en API de tipo de cambio:", error);
+      res.status(500).json({ error: error.message || "No se pudo obtener el tipo de cambio." });
     }
   });
 

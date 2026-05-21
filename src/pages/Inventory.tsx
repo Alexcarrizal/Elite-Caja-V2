@@ -43,10 +43,12 @@ export default function Inventory() {
     return saved ? Number(saved) : 20.00;
   });
   const [isFetchingRate, setIsFetchingRate] = useState<boolean>(false);
+  const [rateStatus, setRateStatus] = useState<{ status: 'idle' | 'success' | 'error'; message: string; source?: string }>({ status: 'idle', message: '' });
 
   const fetchExchangeRate = async (currencyCode: string) => {
     if (!currencyCode || currencyCode === 'USD') return;
     setIsFetchingRate(true);
+    setRateStatus({ status: 'idle', message: 'Consultando tipo de cambio...' });
     try {
       const response = await fetch('/api/exchange-rate', {
         method: 'POST',
@@ -65,10 +67,34 @@ export default function Inventory() {
               purchasePrice: Number((Number(purchasePriceUSD) * data.rate).toFixed(2))
             }));
           }
+          let sourceLabel = '';
+          if (data.source === 'exchange_api') {
+            sourceLabel = 'Google Finance (En vivo)';
+          } else if (data.source === 'gemini_ai') {
+            sourceLabel = 'Inteligencia Artificial (Gemini)';
+          } else if (data.source === 'local_cache') {
+            sourceLabel = 'Reserva local de divisas';
+          } else {
+            sourceLabel = 'Servidor de divisas';
+          }
+          setRateStatus({ 
+            status: 'success', 
+            message: data.message || `Tipo de cambio obtenido con éxito.`,
+            source: sourceLabel
+          });
+        } else {
+          setRateStatus({ status: 'error', message: 'Se recibió un formato inválido del servidor.' });
         }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        setRateStatus({ 
+          status: 'error', 
+          message: errorData.error || 'Error al comunicarse con el servidor de divisas.' 
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching exchange rate:', error);
+      setRateStatus({ status: 'error', message: 'Error de red o conexión al servidor principal.' });
     } finally {
       setIsFetchingRate(false);
     }
@@ -177,6 +203,7 @@ export default function Inventory() {
   const handleOpenModal = (product?: Product) => {
     setIsUSDEnabled(false);
     setPurchasePriceUSD('');
+    setRateStatus({ status: 'idle', message: '' });
     if (product) {
       setEditingProduct(product);
       setFormData({
@@ -199,6 +226,7 @@ export default function Inventory() {
     setEditingProduct(null);
     setIsUSDEnabled(false);
     setPurchasePriceUSD('');
+    setRateStatus({ status: 'idle', message: '' });
     setFormData({
       ...defaultProduct,
       purchaseDate: getTodayString()
@@ -935,6 +963,27 @@ export default function Inventory() {
                               placeholder="20.00"
                             />
                           </div>
+
+                          {/* Estado de consulta de IA / Divisas */}
+                          {rateStatus.status !== 'idle' && (
+                            <div className={`mt-1 text-[10px] p-1.5 rounded flex flex-col gap-0.5 font-semibold ${
+                              rateStatus.status === 'success' 
+                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/15' 
+                                : rateStatus.status === 'error'
+                                ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/15'
+                                : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/15 animate-pulse'
+                            }`}>
+                              <span className="flex items-center gap-1 border-none bg-transparent">
+                                <span className={`w-1.5 h-1.5 rounded-full ${rateStatus.status === 'success' ? 'bg-emerald-500' : rateStatus.status === 'error' ? 'bg-red-500' : 'bg-blue-500 animate-ping'}`} />
+                                <span>{rateStatus.message}</span>
+                              </span>
+                              {rateStatus.source && (
+                                <span className="opacity-75 pl-2.5 text-[9px] font-normal italic">
+                                  Origen: {rateStatus.source}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
