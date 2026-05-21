@@ -160,8 +160,11 @@ export default function Inventory() {
     const searchParams = new URLSearchParams(location.search);
     if (location.state?.openNewProductModal || searchParams.get('action') === 'new-product') {
       handleOpenModal();
-      // Clear both query param and state to avoid reopenings
-      navigate(location.pathname, { replace: true, state: {} });
+      // Delay cleaning the URL/state to allow the modal state to commit and render fully first
+      const cleanTimer = setTimeout(() => {
+        navigate(location.pathname, { replace: true, state: {} });
+      }, 300);
+      return () => clearTimeout(cleanTimer);
     }
   }, [location.state, location.search, navigate]);
 
