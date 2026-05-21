@@ -86,10 +86,21 @@ export default function Inventory() {
           setRateStatus({ status: 'error', message: 'Se recibió un formato inválido del servidor.' });
         }
       } else {
-        const errorData = await response.json().catch(() => ({}));
+        const rawText = await response.text().catch(() => '');
+        let errMsg = `Error ${response.status}`;
+        try {
+          if (rawText) {
+            const errorData = JSON.parse(rawText);
+            errMsg += `: ${errorData.error || errorData.message || 'Error de servidor'}`;
+          } else {
+            errMsg += ': Sin respuesta';
+          }
+        } catch {
+          errMsg += `: ${rawText.substring(0, 60)}`;
+        }
         setRateStatus({ 
           status: 'error', 
-          message: errorData.error || 'Error al comunicarse con el servidor de divisas.' 
+          message: errMsg 
         });
       }
     } catch (error: any) {
