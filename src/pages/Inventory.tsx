@@ -35,6 +35,7 @@ export default function Inventory() {
   const barcodeRef = useRef<HTMLDivElement>(null);
   const [barcodePdfOptions, setBarcodePdfOptions] = useState({ show: false, width: 5.0, height: 2.5, quantity: 1 });
   const [percentMode, setPercentMode] = useState<'cost' | 'margin'>('cost');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -121,6 +122,8 @@ export default function Inventory() {
     if (stockFilter === 'expired') {
       if (!p.expirationDate || new Date(p.expirationDate) >= new Date()) return false;
     }
+
+    if (selectedCategory !== 'all' && (p.category || '').toLowerCase() !== selectedCategory.toLowerCase()) return false;
 
     const term = searchTerm.toLowerCase();
     return (p.name && p.name.toLowerCase().includes(term)) || 
@@ -470,17 +473,77 @@ export default function Inventory() {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex-1 flex flex-col">
-        <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 h-5 w-5" />
-            <input
-              type="text"
-              placeholder="Buscar por nombre, código, categoría o proveedor..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white"
-            />
+        <div className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-3">
+          <div className="flex flex-col md:flex-row gap-3">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 h-5 w-5" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre o código de barra..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm dark:text-white"
+              />
+            </div>
+
+            {/* Separate category buttons / selector dropdown */}
+            <div className="flex gap-2">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer min-w-[180px]"
+              >
+                <option value="all">📁 Todas las Categorías</option>
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+
+              {selectedCategory !== 'all' && (
+                <button
+                  onClick={() => setSelectedCategory('all')}
+                  className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-650 dark:bg-red-900/20 dark:text-red-400 rounded-lg text-xs font-semibold transition-colors"
+                >
+                  Limpiar Filtro
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Quick Click Category Buttons / Pills */}
+          {categories.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 mr-1">
+                Filtrar rápido:
+              </span>
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                  selectedCategory === 'all'
+                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-100 dark:shadow-none'
+                    : 'bg-gray-105 hover:bg-gray-200 dark:bg-gray-700/50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
+                }`}
+              >
+                Todos
+              </button>
+              {categories.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setSelectedCategory(c)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                    selectedCategory.toLowerCase() === c.toLowerCase()
+                      ? 'bg-blue-600 text-white shadow-sm shadow-blue-100 dark:shadow-none'
+                      : 'bg-gray-105 hover:bg-gray-200 dark:bg-gray-700/50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-auto">
