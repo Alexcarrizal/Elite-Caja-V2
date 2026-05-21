@@ -34,6 +34,7 @@ export default function Inventory() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const barcodeRef = useRef<HTMLDivElement>(null);
   const [barcodePdfOptions, setBarcodePdfOptions] = useState({ show: false, width: 5.0, height: 2.5, quantity: 1 });
+  const [percentMode, setPercentMode] = useState<'cost' | 'margin'>('cost');
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -700,40 +701,171 @@ export default function Inventory() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Precio Compra</label>
-                      <input type="number" step="0.01" value={formData.purchasePrice} onChange={e => setFormData({...formData, purchasePrice: Number(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+                  {/* Card for Pricing Calculator */}
+                  <div className="p-4 bg-gray-50/80 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                        Finanzas del Producto
+                      </span>
+                      <span className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
+                        Calculadora Activa
+                      </span>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ganancia *</label>
-                      <input type="number" step="0.01" placeholder="Ej: 5.00" value={formData.salePrice > 0 || formData.purchasePrice > 0 ? Number((formData.salePrice - formData.purchasePrice).toFixed(2)) : ''} onChange={e => {
-                        const gain = Number(e.target.value);
-                        setFormData({
-                          ...formData,
-                          salePrice: Number((formData.purchasePrice + gain).toFixed(2))
-                        });
-                      }} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white bg-blue-50/50 dark:bg-blue-900/10 focus:ring-2 focus:ring-blue-500 font-semibold text-blue-900 dark:text-blue-200" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Precio Venta *</label>
-                      <input required type="number" step="0.01" value={formData.salePrice} onChange={e => setFormData({...formData, salePrice: Number(e.target.value)})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
-                    </div>
-                  </div>
-                  
-                  {formData.salePrice > 0 && formData.purchasePrice > 0 && (
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-900/30 flex justify-between items-center">
-                      <span className="text-sm text-blue-800 dark:text-blue-300">Ganancia estimada:</span>
-                      <div className="text-right">
-                        <span className="block font-bold text-blue-700 dark:text-blue-400">
-                          ${(formData.salePrice - formData.purchasePrice).toFixed(2)}
-                        </span>
-                        <span className="text-xs text-blue-600 dark:text-blue-500">
-                          Margen: {(((formData.salePrice - formData.purchasePrice) / formData.salePrice) * 100).toFixed(1)}%
-                        </span>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Precio de Compra */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                          Precio Compra *
+                        </label>
+                        <div className="relative rounded-lg shadow-sm">
+                          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <span className="text-gray-400 dark:text-gray-500 sm:text-sm">$</span>
+                          </div>
+                          <input
+                            required
+                            type="number"
+                            step="0.01"
+                            value={formData.purchasePrice || ''}
+                            onChange={e => setFormData({...formData, purchasePrice: Number(e.target.value)})}
+                            className="block w-full rounded-lg border-gray-300 dark:border-gray-600 pl-7 p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                            placeholder="0.00"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Precio de Venta */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                          Precio Venta *
+                        </label>
+                        <div className="relative rounded-lg shadow-sm">
+                          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <span className="text-gray-400 dark:text-gray-500 sm:text-sm">$</span>
+                          </div>
+                          <input
+                            required
+                            type="number"
+                            step="0.01"
+                            value={formData.salePrice || ''}
+                            onChange={e => setFormData({...formData, salePrice: Number(e.target.value)})}
+                            className="block w-full rounded-lg border-gray-300 dark:border-gray-600 pl-7 p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm font-bold"
+                            placeholder="0.00"
+                          />
+                        </div>
                       </div>
                     </div>
-                  )}
+
+                    <div className="pt-2 border-t border-gray-150 dark:border-gray-700 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                          Calcular Ganancia por %:
+                        </span>
+                        <div className="flex bg-gray-150 dark:bg-gray-700/80 p-0.5 rounded-lg text-[10px] font-medium border border-gray-200 dark:border-gray-600">
+                          <button
+                            type="button"
+                            onClick={() => setPercentMode('cost')}
+                            className={`px-2 py-0.5 rounded-md transition-all ${percentMode === 'cost' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}`}
+                          >
+                            % s/ Costo
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPercentMode('margin')}
+                            className={`px-2 py-0.5 rounded-md transition-all ${percentMode === 'margin' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}`}
+                          >
+                            % de Margen
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Ganancia en pesos ($) */}
+                        <div>
+                          <label className="block text-[11px] font-medium text-gray-650 dark:text-gray-300 mb-1 flex justify-between">
+                            <span>Ganancia Fija ($)</span>
+                          </label>
+                          <div className="relative rounded-lg shadow-sm">
+                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                              <span className="text-blue-500 dark:text-blue-400 sm:text-xs font-semibold">$</span>
+                            </div>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="Ej: 5.00"
+                              value={formData.salePrice > 0 || formData.purchasePrice > 0 ? Number((formData.salePrice - formData.purchasePrice).toFixed(2)) : ''}
+                              onChange={e => {
+                                const gain = Number(e.target.value);
+                                setFormData({
+                                  ...formData,
+                                  salePrice: Number((formData.purchasePrice + gain).toFixed(2))
+                                });
+                              }}
+                              className="block w-full rounded-lg border-gray-300 dark:border-gray-600 pl-7 p-1.5 bg-blue-50/40 dark:bg-blue-900/10 text-blue-900 dark:text-blue-200 focus:ring-2 focus:ring-blue-500 text-sm font-semibold"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Ganancia en % */}
+                        <div>
+                          <label className="block text-[11px] font-medium text-gray-650 dark:text-gray-300 mb-1 flex justify-between">
+                            <span>Ganancia (%)</span>
+                          </label>
+                          <div className="relative rounded-lg shadow-sm">
+                            <input
+                              type="number"
+                              step="0.1"
+                              placeholder="Ej: 30"
+                              value={
+                                formData.purchasePrice > 0 && formData.salePrice > 0
+                                  ? percentMode === 'cost'
+                                    ? Number((((formData.salePrice - formData.purchasePrice) / formData.purchasePrice) * 100).toFixed(2))
+                                    : Number((((formData.salePrice - formData.purchasePrice) / formData.salePrice) * 100).toFixed(2))
+                                  : ''
+                              }
+                              onChange={e => {
+                                const percent = Number(e.target.value);
+                                if (percentMode === 'cost') {
+                                  setFormData({
+                                    ...formData,
+                                    salePrice: Number((formData.purchasePrice * (1 + percent / 100)).toFixed(2))
+                                  });
+                                } else {
+                                  if (percent >= 100) return;
+                                  setFormData({
+                                    ...formData,
+                                    salePrice: Number((formData.purchasePrice / (1 - percent / 100)).toFixed(2))
+                                  });
+                                }
+                              }}
+                              className="block w-full rounded-lg border-gray-300 dark:border-gray-600 pr-7 p-1.5 bg-emerald-50/40 dark:bg-emerald-900/10 text-emerald-900 dark:text-emerald-200 focus:ring-2 focus:ring-emerald-500 text-sm font-semibold"
+                            />
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                              <span className="text-emerald-500 dark:text-emerald-400 sm:text-xs font-semibold">%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Resumen de rentabilidad */}
+                    {formData.salePrice > 0 && formData.purchasePrice > 0 && (
+                      <div className="p-3 bg-blue-50/40 dark:bg-blue-950/20 rounded-lg border border-blue-100/50 dark:border-blue-900/20 flex justify-between items-center text-xs">
+                        <div className="space-y-0.5 text-gray-500 dark:text-gray-400">
+                          <span className="block font-medium">Rentabilidad:</span>
+                          <span>Cargado con costo ${formData.purchasePrice.toFixed(2)}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="block font-bold text-blue-700 dark:text-blue-400">
+                            +${(formData.salePrice - formData.purchasePrice).toFixed(2)} Ganancia
+                          </span>
+                          <span className="block text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                            Margen Neto: {(((formData.salePrice - formData.purchasePrice) / formData.salePrice) * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   
                   <div className="pt-2">
                     <label className="flex items-center space-x-2">
