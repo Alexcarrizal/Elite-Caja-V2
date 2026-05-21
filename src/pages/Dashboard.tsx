@@ -356,7 +356,7 @@ export default function Dashboard() {
         <div className="flex flex-wrap gap-3">
           <button 
             onClick={() => {
-              navigate('/inventory', { state: { openNewProductModal: true } });
+              navigate('/inventory?action=new-product', { state: { openNewProductModal: true } });
             }}
             className="flex items-center justify-center gap-2 py-2 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-200 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] min-w-[160px]"
           >

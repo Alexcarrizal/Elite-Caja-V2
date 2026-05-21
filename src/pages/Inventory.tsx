@@ -38,14 +38,6 @@ export default function Inventory() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (location.state?.openNewProductModal) {
-      handleOpenModal();
-      // Clear the state so it doesn't reopen on refresh
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-  }, [location, navigate]);
-
   const categories = useMemo(() => {
     return Array.from(new Set(products.map(p => p.category).filter(Boolean))).sort();
   }, [products]);
@@ -163,6 +155,15 @@ export default function Inventory() {
       purchaseDate: getTodayString()
     });
   };
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (location.state?.openNewProductModal || searchParams.get('action') === 'new-product') {
+      handleOpenModal();
+      // Clear both query param and state to avoid reopenings
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.search, navigate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
