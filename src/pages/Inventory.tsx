@@ -36,6 +36,16 @@ export default function Inventory() {
   const [barcodePdfOptions, setBarcodePdfOptions] = useState({ show: false, width: 5.0, height: 2.5, quantity: 1 });
   const [percentMode, setPercentMode] = useState<'cost' | 'margin'>('cost');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isUSDEnabled, setIsUSDEnabled] = useState<boolean>(false);
+  const [purchasePriceUSD, setPurchasePriceUSD] = useState<number | ''>('');
+  const [exchangeRate, setExchangeRate] = useState<number>(() => {
+    const saved = localStorage.getItem('usd_exchange_rate');
+    return saved ? Number(saved) : 20.00;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('usd_exchange_rate', exchangeRate.toString());
+  }, [exchangeRate]);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -134,6 +144,8 @@ export default function Inventory() {
   });
 
   const handleOpenModal = (product?: Product) => {
+    setIsUSDEnabled(false);
+    setPurchasePriceUSD('');
     if (product) {
       setEditingProduct(product);
       setFormData({
@@ -154,6 +166,8 @@ export default function Inventory() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
+    setIsUSDEnabled(false);
+    setPurchasePriceUSD('');
     setFormData({
       ...defaultProduct,
       purchaseDate: getTodayString()
@@ -769,7 +783,7 @@ export default function Inventory() {
                 <div className="space-y-4">
                   {/* Card for Pricing Calculator */}
                   <div className="p-4 bg-gray-50/80 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between border-b border-gray-150 dark:border-gray-700/60 pb-2">
                       <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                         Finanzas del Producto
                       </span>
@@ -778,11 +792,113 @@ export default function Inventory() {
                       </span>
                     </div>
 
+                    {/* Moneda Toggle Selector */}
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Moneda de Compra:
+                      </span>
+                      <div className="flex bg-gray-150 dark:bg-gray-700/80 p-0.5 rounded-lg text-[10px] font-medium border border-gray-200 dark:border-gray-600">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUSDEnabled(false);
+                          }}
+                          className={`px-2 py-0.5 rounded-md transition-all ${!isUSDEnabled ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}`}
+                        >
+                          Local ({settings.currency})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUSDEnabled(true);
+                            if (formData.purchasePrice > 0) {
+                              setPurchasePriceUSD(Number((formData.purchasePrice / exchangeRate).toFixed(2)));
+                            }
+                          }}
+                          className={`px-2 py-0.5 rounded-md transition-all ${isUSDEnabled ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'}`}
+                        >
+                          Dólares (USD &rarr; {settings.currency})
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* USD inputs if enabled */}
+                    {isUSDEnabled && (
+                      <div className="grid grid-cols-2 gap-4 p-3 bg-blue-50/10 dark:bg-blue-950/20 rounded-lg border border-blue-100/50 dark:border-blue-900/20">
+                        {/* Costo en USD */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider mb-1">
+                            Costo USD ($)
+                          </label>
+                          <div className="relative rounded-lg shadow-sm">
+                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5">
+                              <span className="text-blue-600 dark:text-blue-400 text-xs font-bold">$</span>
+                            </div>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={purchasePriceUSD || ''}
+                              onChange={e => {
+                                const usdVal = e.target.value === '' ? '' : Number(e.target.value);
+                                setPurchasePriceUSD(usdVal);
+                                if (usdVal !== '') {
+                                  setFormData({
+                                    ...formData,
+                                    purchasePrice: Number((usdVal * exchangeRate).toFixed(2))
+                                  });
+                                } else {
+                                  setFormData({
+                                    ...formData,
+                                    purchasePrice: 0
+                                  });
+                                }
+                              }}
+                              className="block w-full rounded-lg border-blue-200 dark:border-blue-900 pl-6 p-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-xs font-semibold"
+                              placeholder="0.00"
+                            />
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                              <span className="text-[10px] bg-blue-50 dark:bg-blue-950 rounded px-1 py-0.5 text-blue-600 font-bold">USD</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Tipo de Cambio del día */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider mb-1">
+                            Tipo Cambio
+                          </label>
+                          <div className="relative rounded-lg shadow-sm">
+                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5">
+                              <span className="text-blue-600 dark:text-blue-400 text-xs font-bold">TC</span>
+                            </div>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={exchangeRate || ''}
+                              onChange={e => {
+                                const rateVal = Number(e.target.value);
+                                setExchangeRate(rateVal);
+                                if (purchasePriceUSD !== '') {
+                                  setFormData({
+                                    ...formData,
+                                    purchasePrice: Number((purchasePriceUSD * rateVal).toFixed(2))
+                                  });
+                                }
+                              }}
+                              className="block w-full rounded-lg border-blue-200 dark:border-blue-900 pl-8 p-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-xs font-semibold"
+                              placeholder="20.00"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-4">
                       {/* Precio de Compra */}
                       <div>
-                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                          Precio Compra *
+                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 flex justify-between">
+                          <span>Precio Compra ({settings.currency}) *</span>
+                          {isUSDEnabled && <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold lowercase italic">convertido</span>}
                         </label>
                         <div className="relative rounded-lg shadow-sm">
                           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -793,8 +909,14 @@ export default function Inventory() {
                             type="number"
                             step="0.01"
                             value={formData.purchasePrice || ''}
-                            onChange={e => setFormData({...formData, purchasePrice: Number(e.target.value)})}
-                            className="block w-full rounded-lg border-gray-300 dark:border-gray-600 pl-7 p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                            onChange={e => {
+                              const val = Number(e.target.value);
+                              setFormData({...formData, purchasePrice: val});
+                              if (isUSDEnabled && exchangeRate > 0) {
+                                setPurchasePriceUSD(Number((val / exchangeRate).toFixed(2)));
+                              }
+                            }}
+                            className={`block w-full rounded-lg border-gray-300 dark:border-gray-600 pl-7 p-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm font-medium ${isUSDEnabled ? 'bg-emerald-50/10 dark:bg-emerald-950/10 border-emerald-300 dark:border-emerald-800' : 'bg-white dark:bg-gray-700'}`}
                             placeholder="0.00"
                           />
                         </div>
@@ -803,7 +925,7 @@ export default function Inventory() {
                       {/* Precio de Venta */}
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                          Precio Venta *
+                          Precio Venta ({settings.currency}) *
                         </label>
                         <div className="relative rounded-lg shadow-sm">
                           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
