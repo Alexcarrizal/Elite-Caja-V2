@@ -23,6 +23,7 @@ export default function Inventory() {
     inventoryMovements = [],
     sales = [],
     suppliers: storeSuppliers = [],
+    addSupplier,
     currentUser
   } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
@@ -150,6 +151,16 @@ export default function Inventory() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Automatically save new supplier if it does not exist
+    if (formData.supplier && formData.supplier.trim()) {
+      const supplierName = formData.supplier.trim();
+      const exists = storeSuppliers.some(s => s.name.toLowerCase() === supplierName.toLowerCase());
+      if (!exists) {
+        addSupplier({ name: supplierName });
+      }
+    }
+
     if (editingProduct) {
       updateProduct(editingProduct.id, formData);
     } else {
