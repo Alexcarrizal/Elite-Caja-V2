@@ -51,6 +51,7 @@ export interface Product {
   stock: number;
   minStock: number;
   expirationDate?: string; // ISO date string
+  purchaseDate?: string; // ISO date string or YYYY-MM-DD
   image: string; // Base64 or URL
   warranty?: string; // Optional warranty information
 }

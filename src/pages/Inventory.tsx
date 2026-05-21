@@ -63,6 +63,10 @@ export default function Inventory() {
     return products.filter(p => p.expirationDate && new Date(p.expirationDate) < now);
   }, [products]);
 
+  const getTodayString = () => {
+    return new Date().toISOString().split('T')[0];
+  };
+
   const defaultProduct: Omit<Product, 'id'> = {
     name: '',
     category: '',
@@ -77,6 +81,7 @@ export default function Inventory() {
     image: '',
     warranty: '',
     expirationDate: '',
+    purchaseDate: getTodayString(),
   };
 
   const [formData, setFormData] = useState<Omit<Product, 'id'>>(defaultProduct);
@@ -135,10 +140,17 @@ export default function Inventory() {
   const handleOpenModal = (product?: Product) => {
     if (product) {
       setEditingProduct(product);
-      setFormData(product);
+      setFormData({
+        ...defaultProduct,
+        ...product,
+        purchaseDate: product.purchaseDate || getTodayString()
+      });
     } else {
       setEditingProduct(null);
-      setFormData(defaultProduct);
+      setFormData({
+        ...defaultProduct,
+        purchaseDate: getTodayString()
+      });
     }
     setIsModalOpen(true);
   };
@@ -146,7 +158,10 @@ export default function Inventory() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
-    setFormData(defaultProduct);
+    setFormData({
+      ...defaultProduct,
+      purchaseDate: getTodayString()
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -490,7 +505,15 @@ export default function Inventory() {
                       </div>
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">{product.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{product.barcode}</p>
+                        <div className="flex flex-wrap gap-x-2 text-xs text-gray-500 dark:text-gray-400">
+                          <span>{product.barcode}</span>
+                          {product.purchaseDate && (
+                            <>
+                              <span className="text-gray-300 dark:text-gray-650">|</span>
+                              <span>F. Compra: {product.purchaseDate}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -665,6 +688,10 @@ export default function Inventory() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de Caducidad (Opcional)</label>
                     <input type="date" value={formData.expirationDate ? formData.expirationDate.split('T')[0] : ''} onChange={e => setFormData({...formData, expirationDate: e.target.value ? new Date(e.target.value).toISOString() : undefined})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de Compra</label>
+                    <input type="date" required value={formData.purchaseDate ? formData.purchaseDate.split('T')[0] : getTodayString()} onChange={e => setFormData({...formData, purchaseDate: e.target.value})} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
                   </div>
                 </div>
 
