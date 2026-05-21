@@ -139,8 +139,27 @@ export default function Dashboard() {
       .reduce((sum, r) => sum + (r.withdrawals || 0), 0);
   }, [cashRegisters, weekStart]);
 
-  const weekTotal = weekSales.reduce((sum, s) => sum + s.total, 0);
-  const monthTotal = monthSales.reduce((sum, s) => sum + s.total, 0);
+  const monthExtraIncome = useMemo(() => {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return cashRegisters
+      .filter(r => new Date(r.openedAt) >= firstDayOfMonth)
+      .reduce((sum, r) => sum + (r.extraIncome || 0), 0);
+  }, [cashRegisters]);
+
+  const monthWithdrawals = useMemo(() => {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return cashRegisters
+      .filter(r => new Date(r.openedAt) >= firstDayOfMonth)
+      .reduce((sum, r) => sum + (r.withdrawals || 0), 0);
+  }, [cashRegisters]);
+
+  const weekSalesTotal = weekSales.reduce((sum, s) => sum + s.total, 0);
+  const weekTotal = weekSalesTotal + weekExtraIncome - weekWithdrawals;
+
+  const monthSalesTotal = monthSales.reduce((sum, s) => sum + s.total, 0);
+  const monthTotal = monthSalesTotal + monthExtraIncome - monthWithdrawals;
   
   const todayProductCost = useMemo(() => {
     return todaySales.reduce((sum, s) => {
@@ -194,6 +213,24 @@ export default function Dashboard() {
           data[day] += s.total;
         }
       });
+
+      // Add extra incomes & subtract withdrawals for each day
+      cashRegisters.forEach(r => {
+        if (r.movements) {
+          r.movements.forEach(m => {
+            if (m.date && isAfter(new Date(m.date), startOfDay(subDays(now, 6)))) {
+              const day = format(new Date(m.date), 'dd MMM', { locale: es });
+              if (data[day] !== undefined) {
+                if (m.type === 'extra_income') {
+                  data[day] += m.amount;
+                } else if (m.type === 'withdrawal') {
+                  data[day] -= m.amount;
+                }
+              }
+            }
+          });
+        }
+      });
     } else if (chartPeriod === 'month') {
       const last30Days = Array.from({ length: 30 }).map((_, i) => {
         const d = subDays(now, 29 - i);
@@ -206,6 +243,24 @@ export default function Dashboard() {
         const day = format(new Date(s.date), 'dd MMM', { locale: es });
         if (data[day] !== undefined) {
           data[day] += s.total;
+        }
+      });
+
+      // Add extra incomes & subtract withdrawals for each day
+      cashRegisters.forEach(r => {
+        if (r.movements) {
+          r.movements.forEach(m => {
+            if (m.date && isAfter(new Date(m.date), startOfDay(subDays(now, 29)))) {
+              const day = format(new Date(m.date), 'dd MMM', { locale: es });
+              if (data[day] !== undefined) {
+                if (m.type === 'extra_income') {
+                  data[day] += m.amount;
+                } else if (m.type === 'withdrawal') {
+                  data[day] -= m.amount;
+                }
+              }
+            }
+          });
         }
       });
     } else if (chartPeriod === 'year') {
@@ -222,10 +277,28 @@ export default function Dashboard() {
           data[month] += s.total;
         }
       });
+
+      // Add extra incomes & subtract withdrawals for each month
+      cashRegisters.forEach(r => {
+        if (r.movements) {
+          r.movements.forEach(m => {
+            if (m.date && isAfter(new Date(m.date), new Date(now.getFullYear(), now.getMonth() - 11, 1))) {
+              const month = format(new Date(m.date), 'MMM yyyy', { locale: es });
+              if (data[month] !== undefined) {
+                if (m.type === 'extra_income') {
+                  data[month] += m.amount;
+                } else if (m.type === 'withdrawal') {
+                  data[month] -= m.amount;
+                }
+              }
+            }
+          });
+        }
+      });
     }
 
     return Object.entries(data).map(([date, total]) => ({ date, total }));
-  }, [sales, chartPeriod]);
+  }, [sales, cashRegisters, chartPeriod]);
 
   return (
     <motion.div 
@@ -324,10 +397,15 @@ export default function Dashboard() {
           <h3 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mt-1">
             {dashboardVisibility?.weekSales !== false ? formatCurrency(weekTotal, settings?.currency) : '••••••'}
           </h3>
-          <p className="text-xs font-medium text-green-600 dark:text-green-400 mt-3 flex items-center bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-md w-fit">
-            <TrendingUp className="w-3 h-3 mr-1" />
-            {format(weekStart, 'd MMM', { locale: es })} - Presente
-          </p>
+          <div className="flex flex-col gap-1 mt-3">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              Ventas + Ingresos - Retiros
+            </p>
+            <p className="text-xs font-medium text-green-600 dark:text-green-400 flex items-center bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-md w-fit">
+              <TrendingUp className="w-3 h-3 mr-1" />
+              {format(weekStart, 'd MMM', { locale: es })} - Presente
+            </p>
+          </div>
         </motion.div>
 
         <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
@@ -345,9 +423,14 @@ export default function Dashboard() {
           <h3 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mt-1">
             {dashboardVisibility?.monthSales !== false ? formatCurrency(monthTotal, settings?.currency) : '••••••'}
           </h3>
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3 capitalize">
-            {format(new Date(), 'MMMM yyyy', { locale: es })}
-          </p>
+          <div className="flex flex-col gap-1 mt-3">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              Ventas + Ingresos - Retiros
+            </p>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 capitalize">
+              {format(new Date(), 'MMMM yyyy', { locale: es })}
+            </p>
+          </div>
         </motion.div>
       </div>
 
