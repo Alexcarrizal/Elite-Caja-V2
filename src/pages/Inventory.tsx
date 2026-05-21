@@ -56,10 +56,10 @@ export default function Inventory() {
       setFormData(prev => {
         const next = { ...prev };
         if (purchasePriceUSD !== '') {
-          next.purchasePrice = Number((Number(purchasePriceUSD) * rate).toFixed(2));
+          next.purchasePrice = Math.round(Number(purchasePriceUSD) * rate);
         }
         if (salePriceUSD !== '') {
-          next.salePrice = Number((Number(salePriceUSD) * rate).toFixed(2));
+          next.salePrice = Math.round(Number(salePriceUSD) * rate);
         }
         return next;
       });
@@ -316,10 +316,16 @@ export default function Inventory() {
       }
     }
 
+    const roundedData = {
+      ...formData,
+      purchasePrice: Math.round(formData.purchasePrice),
+      salePrice: Math.round(formData.salePrice)
+    };
+
     if (editingProduct) {
-      updateProduct(editingProduct.id, formData);
+      updateProduct(editingProduct.id, roundedData);
     } else {
-      addProduct({ ...formData, id: Math.random().toString(36).substr(2, 9) });
+      addProduct({ ...roundedData, id: Math.random().toString(36).substr(2, 9) });
     }
     handleCloseModal();
   };
@@ -967,7 +973,7 @@ export default function Inventory() {
                                   if (usdVal !== '') {
                                     setFormData(prev => ({
                                       ...prev,
-                                      purchasePrice: Number((usdVal * exchangeRate).toFixed(2))
+                                      purchasePrice: Math.round(usdVal * exchangeRate)
                                     }));
                                   } else {
                                     setFormData(prev => ({
@@ -1004,7 +1010,7 @@ export default function Inventory() {
                                   if (usdVal !== '') {
                                     setFormData(prev => ({
                                       ...prev,
-                                      salePrice: Number((usdVal * exchangeRate).toFixed(2))
+                                      salePrice: Math.round(usdVal * exchangeRate)
                                     }));
                                   } else {
                                     setFormData(prev => ({
@@ -1056,10 +1062,10 @@ export default function Inventory() {
                                 setFormData(prev => {
                                   const next = { ...prev };
                                   if (purchasePriceUSD !== '') {
-                                    next.purchasePrice = Number((Number(purchasePriceUSD) * rateVal).toFixed(2));
+                                    next.purchasePrice = Math.round(Number(purchasePriceUSD) * rateVal);
                                   }
                                   if (salePriceUSD !== '') {
-                                    next.salePrice = Number((Number(salePriceUSD) * rateVal).toFixed(2));
+                                    next.salePrice = Math.round(Number(salePriceUSD) * rateVal);
                                   }
                                   return next;
                                 });
@@ -1107,7 +1113,7 @@ export default function Inventory() {
                           <input
                             required
                             type="number"
-                            step="0.01"
+                            step="1"
                             value={formData.purchasePrice || ''}
                             onChange={e => {
                               const val = Number(e.target.value);
@@ -1116,8 +1122,15 @@ export default function Inventory() {
                                 setPurchasePriceUSD(Number((val / exchangeRate).toFixed(2)));
                               }
                             }}
+                            onBlur={e => {
+                              const val = Math.round(Number(e.target.value));
+                              setFormData(prev => ({ ...prev, purchasePrice: val }));
+                              if (isUSDEnabled && exchangeRate > 0) {
+                                setPurchasePriceUSD(Number((val / exchangeRate).toFixed(2)));
+                              }
+                            }}
                             className={`block w-full rounded-lg border-gray-300 dark:border-gray-600 pl-7 p-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm font-medium ${isUSDEnabled ? 'bg-emerald-50/10 dark:bg-emerald-950/10 border-emerald-300 dark:border-emerald-800' : 'bg-white dark:bg-gray-700'}`}
-                            placeholder="0.00"
+                            placeholder="0"
                           />
                         </div>
                       </div>
@@ -1135,7 +1148,7 @@ export default function Inventory() {
                           <input
                             required
                             type="number"
-                            step="0.01"
+                            step="1"
                             value={formData.salePrice || ''}
                             onChange={e => {
                               const val = Number(e.target.value);
@@ -1144,8 +1157,15 @@ export default function Inventory() {
                                 setSalePriceUSD(Number((val / exchangeRate).toFixed(2)));
                               }
                             }}
+                            onBlur={e => {
+                              const val = Math.round(Number(e.target.value));
+                              setFormData(prev => ({ ...prev, salePrice: val }));
+                              if (isUSDEnabled && exchangeRate > 0) {
+                                setSalePriceUSD(Number((val / exchangeRate).toFixed(2)));
+                              }
+                            }}
                             className={`block w-full rounded-lg border-gray-300 dark:border-gray-600 pl-7 p-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm font-bold ${isUSDEnabled ? 'bg-emerald-50/10 dark:bg-emerald-950/10 border-emerald-300 dark:border-emerald-800' : 'bg-white dark:bg-gray-700'}`}
-                            placeholder="0.00"
+                            placeholder="0"
                           />
                         </div>
                       </div>
@@ -1193,7 +1213,7 @@ export default function Inventory() {
                                 const gain = Number(e.target.value);
                                 setFormData({
                                   ...formData,
-                                  salePrice: Number((formData.purchasePrice + gain).toFixed(2))
+                                  salePrice: Math.round(formData.purchasePrice + gain)
                                 });
                               }}
                               className="block w-full rounded-lg border-gray-300 dark:border-gray-600 pl-7 p-1.5 bg-blue-50/40 dark:bg-blue-900/10 text-blue-900 dark:text-blue-200 focus:ring-2 focus:ring-blue-500 text-sm font-semibold"
@@ -1223,13 +1243,13 @@ export default function Inventory() {
                                 if (percentMode === 'cost') {
                                   setFormData({
                                     ...formData,
-                                    salePrice: Number((formData.purchasePrice * (1 + percent / 100)).toFixed(2))
+                                    salePrice: Math.round(formData.purchasePrice * (1 + percent / 100))
                                   });
                                 } else {
                                   if (percent >= 100) return;
                                   setFormData({
                                     ...formData,
-                                    salePrice: Number((formData.purchasePrice / (1 - percent / 100)).toFixed(2))
+                                    salePrice: Math.round(formData.purchasePrice / (1 - percent / 100))
                                   });
                                 }
                               }}
@@ -1248,11 +1268,11 @@ export default function Inventory() {
                       <div className="p-3 bg-blue-50/40 dark:bg-blue-950/20 rounded-lg border border-blue-100/50 dark:border-blue-900/20 flex justify-between items-center text-xs">
                         <div className="space-y-0.5 text-gray-500 dark:text-gray-400">
                           <span className="block font-medium">Rentabilidad:</span>
-                          <span>Cargado con costo ${formData.purchasePrice.toFixed(2)}</span>
+                          <span>Cargado con costo ${formData.purchasePrice.toFixed(0)}</span>
                         </div>
                         <div className="text-right">
                           <span className="block font-bold text-blue-700 dark:text-blue-400">
-                            +${(formData.salePrice - formData.purchasePrice).toFixed(2)} Ganancia
+                            +${Math.round(formData.salePrice - formData.purchasePrice)} Ganancia
                           </span>
                           <span className="block text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
                             Margen Neto: {(((formData.salePrice - formData.purchasePrice) / formData.salePrice) * 100).toFixed(1)}%
