@@ -414,78 +414,78 @@ export default function POS() {
         </form>
 
         {/* Category & Subcategory Pill bar */}
-        <div className="bg-gray-50/50 dark:bg-gray-950/20 border-b border-gray-100 dark:border-gray-700/80 py-3 px-4 space-y-3 shrink-0">
-          {/* Categories Row */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Categorías</span>
-              {(selectedCategory !== 'all' || selectedSubcategory !== 'all') && (
+        <div className="bg-gray-50/50 dark:bg-gray-950/20 border-b border-gray-100 dark:border-gray-700/80 py-3.5 px-4 shrink-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:divide-x md:divide-gray-100 dark:md:divide-gray-800">
+            {/* Categories Col */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Categorías</span>
+                {(selectedCategory !== 'all' || selectedSubcategory !== 'all') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory('all');
+                      setSelectedSubcategory('all');
+                    }}
+                    className="text-[11px] text-blue-600 dark:text-blue-400 font-bold hover:underline"
+                  >
+                    Limpiar Filtros
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto pr-1 scrollbar-thin">
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedCategory('all');
-                    setSelectedSubcategory('all');
-                  }}
-                  className="text-[11px] text-blue-600 dark:text-blue-400 font-bold hover:underline"
+                  onClick={() => setSelectedCategory('all')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all border ${
+                    selectedCategory === 'all'
+                      ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                      : 'bg-white border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
+                  }`}
                 >
-                  Limpiar Filtros
+                  Todas ({products.length})
                 </button>
-              )}
+                {categories.map(cat => {
+                  const count = products.filter(p => p.category === cat).length;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all border ${
+                        selectedCategory === cat
+                          ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                          : 'bg-white border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {cat} ({count})
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none scroll-smooth">
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('all')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
-                  selectedCategory === 'all'
-                    ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                    : 'bg-white border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-350 dark:hover:bg-gray-700'
-                }`}
-              >
-                Todas ({products.length})
-              </button>
-              {categories.map(cat => {
-                const count = products.filter(p => p.category === cat).length;
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
-                      selectedCategory === cat
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                        : 'bg-white border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-350 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    {cat} ({count})
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
-          {/* Subcategories Row (Dynamic) */}
-          {subcategories.length > 0 && (
-            <div className="border-t border-gray-100/55 dark:border-gray-800/40 pt-2.5">
-              <div className="flex items-center mb-2">
+            {/* Subcategories Col */}
+            <div className={`space-y-2 md:pl-4 transition-all`}>
+              <div className="flex items-center">
                 <span className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Subcategorías</span>
                 {selectedCategory !== 'all' && (
-                  <span className="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-305 font-bold">
+                  <span className="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-blue-105 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 font-bold max-w-[140px] truncate">
                     {selectedCategory}
                   </span>
                 )}
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none scroll-smooth">
+              <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto pr-1 scrollbar-thin">
                 <button
                   type="button"
                   onClick={() => setSelectedSubcategory('all')}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all border ${
                     selectedSubcategory === 'all'
                       ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
-                      : 'bg-white border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-350 dark:hover:bg-gray-700'
+                      : 'bg-white border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
                   }`}
                 >
-                  Todas las subcategorías
+                  Todas ({selectedCategory === 'all' ? products.length : products.filter(p => p.category === selectedCategory).length})
                 </button>
                 {subcategories.map(sub => {
                   const count = products.filter(p => {
@@ -497,19 +497,24 @@ export default function POS() {
                       key={sub}
                       type="button"
                       onClick={() => setSelectedSubcategory(sub)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all border ${
                         selectedSubcategory === sub
                           ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
-                          : 'bg-white border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-350 dark:hover:bg-gray-700'
+                          : 'bg-white border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
                       }`}
                     >
                       {sub} ({count})
                     </button>
                   );
                 })}
+                {subcategories.length === 0 && (
+                  <div className="text-xs text-gray-400 italic py-1 pl-1">
+                    No hay subcategorías registradas para esta selección.
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
