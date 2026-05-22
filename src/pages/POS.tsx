@@ -29,6 +29,24 @@ export default function POS() {
     cashRegisters = [] 
   } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all');
+
+  const categories = useMemo(() => {
+    return Array.from(new Set(products.map(p => p.category).filter(Boolean))).sort();
+  }, [products]);
+
+  const subcategories = useMemo(() => {
+    const filtered = selectedCategory && selectedCategory !== 'all'
+      ? products.filter(p => p.category === selectedCategory)
+      : products;
+    return Array.from(new Set(filtered.map(p => p.subcategory).filter(Boolean))).sort();
+  }, [products, selectedCategory]);
+
+  useEffect(() => {
+    setSelectedSubcategory('all');
+  }, [selectedCategory]);
+
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('Efectivo');
   const [cashReceived, setCashReceived] = useState<number>(0);
   const [applyTax, setApplyTax] = useState<boolean>(settings.applyTax);
@@ -120,13 +138,24 @@ export default function POS() {
 
   const filteredProducts = useMemo(() => {
     const term = searchTerm.toLowerCase();
-    return products.filter(p => 
-      (p.name && p.name.toLowerCase().includes(term)) || 
-      (p.barcode && String(p.barcode).toLowerCase().includes(term)) ||
-      (p.category && p.category.toLowerCase().includes(term)) ||
-      (p.supplier && p.supplier.toLowerCase().includes(term))
-    );
-  }, [products, searchTerm]);
+    return products.filter(p => {
+      // Search term matches name, barcode, supplier, category or subcategory
+      const matchesSearch = !term ||
+        (p.name && p.name.toLowerCase().includes(term)) || 
+        (p.barcode && String(p.barcode).toLowerCase().includes(term)) ||
+        (p.category && p.category.toLowerCase().includes(term)) ||
+        (p.subcategory && p.subcategory.toLowerCase().includes(term)) ||
+        (p.supplier && p.supplier.toLowerCase().includes(term));
+
+      // Category filter
+      const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
+
+      // Subcategory filter
+      const matchesSubcategory = selectedSubcategory === 'all' || p.subcategory === selectedSubcategory;
+
+      return matchesSearch && matchesCategory && matchesSubcategory;
+    });
+  }, [products, searchTerm, selectedCategory, selectedSubcategory]);
 
 
 
@@ -384,9 +413,108 @@ export default function POS() {
           </button>
         </form>
 
+        {/* Category & Subcategory Pill bar */}
+        <div className="bg-gray-50/50 dark:bg-gray-950/20 border-b border-gray-100 dark:border-gray-700/80 py-3 px-4 space-y-3 shrink-0">
+          {/* Categories Row */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Categorías</span>
+              {(selectedCategory !== 'all' || selectedSubcategory !== 'all') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory('all');
+                    setSelectedSubcategory('all');
+                  }}
+                  className="text-[11px] text-blue-600 dark:text-blue-400 font-bold hover:underline"
+                >
+                  Limpiar Filtros
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none scroll-smooth">
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
+                  selectedCategory === 'all'
+                    ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                    : 'bg-white border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-350 dark:hover:bg-gray-700'
+                }`}
+              >
+                Todas ({products.length})
+              </button>
+              {categories.map(cat => {
+                const count = products.filter(p => p.category === cat).length;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
+                      selectedCategory === cat
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                        : 'bg-white border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-350 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {cat} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Subcategories Row (Dynamic) */}
+          {subcategories.length > 0 && (
+            <div className="border-t border-gray-100/55 dark:border-gray-800/40 pt-2.5">
+              <div className="flex items-center mb-2">
+                <span className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Subcategorías</span>
+                {selectedCategory !== 'all' && (
+                  <span className="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-305 font-bold">
+                    {selectedCategory}
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none scroll-smooth">
+                <button
+                  type="button"
+                  onClick={() => setSelectedSubcategory('all')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${
+                    selectedSubcategory === 'all'
+                      ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
+                      : 'bg-white border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-350 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  Todas las subcategorías
+                </button>
+                {subcategories.map(sub => {
+                  const count = products.filter(p => {
+                    const matchCat = selectedCategory === 'all' || p.category === selectedCategory;
+                    return matchCat && p.subcategory === sub;
+                  }).length;
+                  return (
+                    <button
+                      key={sub}
+                      type="button"
+                      onClick={() => setSelectedSubcategory(sub)}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${
+                        selectedSubcategory === sub
+                          ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
+                          : 'bg-white border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-350 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {sub} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
           {/* Top 10 Products Section */}
-          {topProducts.length > 0 && !searchTerm && (
+          {topProducts.length > 0 && !searchTerm && selectedCategory === 'all' && selectedSubcategory === 'all' && (
             <div>
               <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center">
                 <Star className="w-4 h-4 mr-1.5 text-yellow-500" />
@@ -426,8 +554,24 @@ export default function POS() {
 
           {/* All Products Section */}
           <div>
-            <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-              {searchTerm ? 'Resultados de Búsqueda' : 'Todos los Productos'}
+            <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center flex-wrap gap-1">
+              {searchTerm ? (
+                <span>Resultados de Búsqueda</span>
+              ) : selectedCategory !== 'all' ? (
+                <>
+                  <span>Categoría:</span>
+                  <span className="text-blue-600 dark:text-blue-400 font-black normal-case">{selectedCategory}</span>
+                  {selectedSubcategory !== 'all' && (
+                    <>
+                      <span className="mx-1 text-gray-300 dark:text-gray-600">&gt;</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-black normal-case">{selectedSubcategory}</span>
+                    </>
+                  )}
+                </>
+              ) : (
+                <span>Todos los Productos</span>
+              )}
+              <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-550 font-medium lowercase">({filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'})</span>
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredProducts.map(product => (
