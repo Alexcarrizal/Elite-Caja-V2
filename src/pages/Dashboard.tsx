@@ -337,131 +337,83 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className={`grid gap-6 grid-cols-1 md:grid-cols-2 ${currentUser?.role === 'Cajero' ? 'lg:grid-cols-3' : 'lg:grid-cols-5'}`}>
-        <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <div className="h-12 w-12 bg-orange-50 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400">
-              <Clock className="w-6 h-6" />
+        <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-10 w-10 bg-orange-50 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400">
+              <Clock className="w-5 h-5" />
             </div>
-          </div>
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">VENTAS DE HOY</p>
             <button onClick={() => toggleDashboardVisibility('todaySales')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
               {dashboardVisibility?.todaySales !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </button>
           </div>
-          <h3 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mt-1">
+          <p className="text-xs font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">VENTAS DE HOY</p>
+          <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white mt-1.5">
             {dashboardVisibility?.todaySales !== false ? formatCurrency(todayTotal + todayExtraIncome - todayWithdrawals, settings?.currency) : '••••••'}
           </h3>
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3">
-            Ventas + Ingresos - Retiros
-          </p>
         </motion.div>
 
         {currentUser?.role !== 'Cajero' && (
-          <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <div className="h-12 w-12 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400">
-                <Wallet className="w-6 h-6" />
+          <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-3">
+              <div className="h-10 w-10 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400">
+                <Wallet className="w-5 h-5" />
               </div>
-            </div>
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">GANANCIA NETA (SEMANAL)</p>
               <button onClick={() => toggleDashboardVisibility('netProfit')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                 {dashboardVisibility?.netProfit !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
               </button>
             </div>
-            <h3 className="text-3xl font-bold tracking-tight text-green-600 dark:text-green-400 mt-1">
+            <p className="text-xs font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">GANANCIA NETA (SEMANAL)</p>
+            <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-green-600 dark:text-green-400 mt-1.5">
               {dashboardVisibility?.netProfit !== false ? formatCurrency(weekNetProfit, settings?.currency) : '••••••'}
             </h3>
-            <div className="flex flex-col gap-1 mt-3">
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                Ventas + Ingresos - Costos - Retiros esta semana
-              </p>
-              <p className="text-xs font-medium text-green-600 dark:text-green-400 flex items-center bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-md w-fit">
-                <TrendingUp className="w-3 h-3 mr-1" />
-                {format(weekStart, 'd MMM', { locale: es })} - Presente
-              </p>
-            </div>
           </motion.div>
         )}
 
         {currentUser?.role !== 'Cajero' && (
-          <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <div className="h-12 w-12 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400">
-                <ShoppingCart className="w-6 h-6" />
+          <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-3">
+              <div className="h-10 w-10 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400">
+                <ShoppingCart className="w-5 h-5" />
               </div>
-            </div>
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">COSTO DE PRODUCTOS (SEMANAL)</p>
               <button onClick={() => toggleDashboardVisibility('productCost')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                 {dashboardVisibility?.productCost !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
               </button>
             </div>
-            <h3 className="text-3xl font-bold tracking-tight text-red-600 dark:text-red-400 mt-1">
+            <p className="text-xs font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">COSTO DE PRODUCTOS (SEMANAL)</p>
+            <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-red-600 dark:text-red-400 mt-1.5">
               {dashboardVisibility?.productCost !== false ? formatCurrency(weekProductCost, settings?.currency) : '••••••'}
             </h3>
-            <div className="flex flex-col gap-1 mt-3">
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                Costo total de productos vendidos esta semana
-              </p>
-              <p className="text-xs font-medium text-red-650 dark:text-red-400 flex items-center bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-md w-fit">
-                <TrendingDown className="w-3 h-3 mr-1" />
-                {format(weekStart, 'd MMM', { locale: es })} - Presente
-              </p>
-            </div>
           </motion.div>
         )}
 
-        <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <div className="h-12 w-12 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400">
-              <DollarSign className="w-6 h-6" />
+        <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-10 w-10 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <DollarSign className="w-5 h-5" />
             </div>
-          </div>
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">VENTAS SEMANA</p>
             <button onClick={() => toggleDashboardVisibility('weekSales')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
               {dashboardVisibility?.weekSales !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </button>
           </div>
-          <h3 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mt-1">
+          <p className="text-xs font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">VENTAS SEMANA</p>
+          <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white mt-1.5">
             {dashboardVisibility?.weekSales !== false ? formatCurrency(weekTotal, settings?.currency) : '••••••'}
           </h3>
-          <div className="flex flex-col gap-1 mt-3">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              Ventas + Ingresos - Retiros
-            </p>
-            <p className="text-xs font-medium text-green-600 dark:text-green-400 flex items-center bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-md w-fit">
-              <TrendingUp className="w-3 h-3 mr-1" />
-              {format(weekStart, 'd MMM', { locale: es })} - Presente
-            </p>
-          </div>
         </motion.div>
 
-        <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <div className="h-12 w-12 bg-purple-50 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400">
-              <Calendar className="w-6 h-6" />
+        <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-10 w-10 bg-purple-50 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400">
+              <Calendar className="w-5 h-5" />
             </div>
-          </div>
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">VENTAS DEL MES</p>
             <button onClick={() => toggleDashboardVisibility('monthSales')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
               {dashboardVisibility?.monthSales !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </button>
           </div>
-          <h3 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mt-1">
+          <p className="text-xs font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">VENTAS DEL MES</p>
+          <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white mt-1.5">
             {dashboardVisibility?.monthSales !== false ? formatCurrency(monthTotal, settings?.currency) : '••••••'}
           </h3>
-          <div className="flex flex-col gap-1 mt-3">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              Ventas + Ingresos - Retiros
-            </p>
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 capitalize">
-              {format(new Date(), 'MMMM yyyy', { locale: es })}
-            </p>
-          </div>
         </motion.div>
       </div>
 
