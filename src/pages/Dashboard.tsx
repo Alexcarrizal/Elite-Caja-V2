@@ -172,6 +172,17 @@ export default function Dashboard() {
     }, 0);
   }, [todaySales]);
 
+  const weekProductCost = useMemo(() => {
+    return weekSales.reduce((sum, s) => {
+      const cost = (s.items || []).reduce((itemSum, item) => {
+        const purchasePrice = Number(item.purchasePrice) || 0;
+        const qty = Number(item.quantity) || 0;
+        return itemSum + (purchasePrice * qty);
+      }, 0);
+      return sum + cost;
+    }, 0);
+  }, [weekSales]);
+
   // Calculate net profit for the week (Ingresos - Costos - Gastos)
   const weekNetProfit = weekSales.reduce((sum, s) => {
     const saleProfit = (s.items || []).reduce((itemSum, item) => {
@@ -346,7 +357,7 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex items-center justify-between mb-1">
-              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">GANANCIA NETA</p>
+              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">GANANCIA NETA (SEMANAL)</p>
               <button onClick={() => toggleDashboardVisibility('netProfit')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                 {dashboardVisibility?.netProfit !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
               </button>
@@ -354,9 +365,15 @@ export default function Dashboard() {
             <h3 className="text-3xl font-bold tracking-tight text-green-600 dark:text-green-400 mt-1">
               {dashboardVisibility?.netProfit !== false ? formatCurrency(weekNetProfit, settings?.currency) : '••••••'}
             </h3>
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3 flex items-center">
-              Ventas + Ingresos - Costos - Retiros
-            </p>
+            <div className="flex flex-col gap-1 mt-3">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                Ventas + Ingresos - Costos - Retiros esta semana
+              </p>
+              <p className="text-xs font-medium text-green-600 dark:text-green-400 flex items-center bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-md w-fit">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                {format(weekStart, 'd MMM', { locale: es })} - Presente
+              </p>
+            </div>
           </motion.div>
         )}
 
@@ -368,17 +385,23 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex items-center justify-between mb-1">
-              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">COSTO DE PRODUCTOS</p>
+              <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400">COSTO DE PRODUCTOS (SEMANAL)</p>
               <button onClick={() => toggleDashboardVisibility('productCost')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                 {dashboardVisibility?.productCost !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
               </button>
             </div>
             <h3 className="text-3xl font-bold tracking-tight text-red-600 dark:text-red-400 mt-1">
-              {dashboardVisibility?.productCost !== false ? formatCurrency(todayProductCost, settings?.currency) : '••••••'}
+              {dashboardVisibility?.productCost !== false ? formatCurrency(weekProductCost, settings?.currency) : '••••••'}
             </h3>
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3 flex items-center">
-              Costo de los productos vendidos hoy
-            </p>
+            <div className="flex flex-col gap-1 mt-3">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                Costo total de productos vendidos esta semana
+              </p>
+              <p className="text-xs font-medium text-red-650 dark:text-red-400 flex items-center bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-md w-fit">
+                <TrendingDown className="w-3 h-3 mr-1" />
+                {format(weekStart, 'd MMM', { locale: es })} - Presente
+              </p>
+            </div>
           </motion.div>
         )}
 
