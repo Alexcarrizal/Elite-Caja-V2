@@ -7,6 +7,8 @@ import { es } from 'date-fns/locale';
 import { formatCurrency, capitalizeFirst } from '../utils/format';
 import { jsPDF } from 'jspdf';
 import { PaymentMethodType } from '../types';
+import { auth } from '../services/firebase';
+import { signOut } from 'firebase/auth';
 
 export default function CashRegister() {
   const navigate = useNavigate();
@@ -20,7 +22,8 @@ export default function CashRegister() {
     deleteMovement, 
     editMovement, 
     settings = defaultSettings, 
-    sales = [] 
+    sales = [],
+    logout
   } = useStore();
   const currentRegister = cashRegisters.find(r => r.status === 'open');
   const pastRegisters = cashRegisters.filter(r => r.status === 'closed').reverse();
@@ -60,6 +63,7 @@ export default function CashRegister() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('Efectivo');
   const [actionType, setActionType] = useState<'open' | 'close' | 'withdraw' | 'income' | 'edit_movement' | null>(null);
   const [editingMovementId, setEditingMovementId] = useState<string | null>(null);
+  const [logoutOnClose, setLogoutOnClose] = useState<boolean>(false);
 
   React.useEffect(() => {
     if (!currentRegister) {
@@ -67,7 +71,7 @@ export default function CashRegister() {
     }
   }, [currentRegister]);
 
-  const handleAction = (e: React.FormEvent) => {
+  const handleAction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (actionType === 'open') {
       openRegister(amount);
@@ -84,6 +88,16 @@ export default function CashRegister() {
         generateReport(closedRegister);
       }
       closeRegister(amount);
+      if (logoutOnClose) {
+        try {
+          await signOut(auth);
+        } catch(e) {
+          console.error('Failed to sign out of Firebase', e);
+        }
+        useStore.getState().clearDatabase();
+        logout();
+        navigate('/login');
+      }
     } else if (actionType === 'withdraw') {
       addWithdrawal(amount, description || 'Retiro de caja', notes);
     } else if (actionType === 'income') {
@@ -97,6 +111,7 @@ export default function CashRegister() {
     setPaymentMethod('Efectivo');
     setActionType(null);
     setEditingMovementId(null);
+    setLogoutOnClose(false);
   };
 
   const handleEditMovement = (movement: any) => {
@@ -535,6 +550,21 @@ export default function CashRegister() {
                   />
                 </div>
               </div>
+
+              {actionType === 'close' && (
+                <div className="flex items-center space-x-2.5 pt-1">
+                  <input
+                    type="checkbox"
+                    id="logoutOnClose"
+                    checked={logoutOnClose}
+                    onChange={(e) => setLogoutOnClose(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500 dark:focus:ring-red-600 bg-gray-50 dark:bg-gray-900 cursor-pointer"
+                  />
+                  <label htmlFor="logoutOnClose" className="text-sm font-medium text-gray-700 dark:text-gray-300 select-none cursor-pointer hover:text-gray-900 dark:hover:text-white transition-colors">
+                    Cerrar sesión al confirmar cierre
+                  </label>
+                </div>
+              )}
               
               {(actionType === 'withdraw' || actionType === 'income' || actionType === 'edit_movement') && (
                 <>
