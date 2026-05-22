@@ -64,8 +64,16 @@ export default function Dashboard() {
   const [adjustmentType, setAdjustmentType] = useState<'entrada' | 'salida'>('entrada');
 
   const todaySales = useMemo(() => {
-    return sales.filter(s => isToday(new Date(s.date)));
-  }, [sales]);
+    const currentRegister = cashRegisters.find(r => r.status === 'open');
+    if (!currentRegister) return [];
+    
+    // Only count sales made during the currently open cash register session
+    return sales.filter(s => {
+      const saleDate = new Date(s.date);
+      const openDate = new Date(currentRegister.openedAt);
+      return saleDate >= openDate && isToday(saleDate);
+    });
+  }, [sales, cashRegisters]);
 
   const weekStart = useMemo(() => {
     const now = new Date();
@@ -116,15 +124,15 @@ export default function Dashboard() {
   const todayTotal = todaySales.reduce((sum, s) => sum + s.total, 0);
   
   const todayExtraIncome = useMemo(() => {
-    return cashRegisters
-      .filter(r => isToday(new Date(r.openedAt)))
-      .reduce((sum, r) => sum + (r.extraIncome || 0), 0);
+    const currentRegister = cashRegisters.find(r => r.status === 'open');
+    if (!currentRegister) return 0;
+    return isToday(new Date(currentRegister.openedAt)) ? (currentRegister.extraIncome || 0) : 0;
   }, [cashRegisters]);
 
   const todayWithdrawals = useMemo(() => {
-    return cashRegisters
-      .filter(r => isToday(new Date(r.openedAt)))
-      .reduce((sum, r) => sum + (r.withdrawals || 0), 0);
+    const currentRegister = cashRegisters.find(r => r.status === 'open');
+    if (!currentRegister) return 0;
+    return isToday(new Date(currentRegister.openedAt)) ? (currentRegister.withdrawals || 0) : 0;
   }, [cashRegisters]);
 
   const weekExtraIncome = useMemo(() => {
