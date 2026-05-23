@@ -94,8 +94,9 @@ export default function CashRegister() {
         } catch(e) {
           console.error('Failed to sign out of Firebase', e);
         }
-        useStore.getState().clearDatabase();
+        useStore.setState({ firebaseUser: null });
         logout();
+        useStore.getState().clearDatabase();
         navigate('/login');
       }
     } else if (actionType === 'withdraw') {

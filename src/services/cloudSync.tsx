@@ -188,8 +188,8 @@ export const CloudSyncProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const uid = state.firebaseUser?.uid;
       const prev = stateRef.current;
       
-      // Do not sync UP if we are currently syncing DOWN or if the user is not logged in
-      if (!uid || isSyncingDown || !initialLoadDone.current) {
+      // Do not sync UP if we are currently syncing DOWN, if the user is not logged in, or if they are logging out
+      if (!uid || isSyncingDown || !initialLoadDone.current || !state.currentUser) {
         stateRef.current = state;
         return;
       }
