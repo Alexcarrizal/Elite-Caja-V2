@@ -71,7 +71,7 @@ export default function Dashboard() {
     return sales.filter(s => {
       const saleDate = new Date(s.date);
       const openDate = new Date(currentRegister.openedAt);
-      return saleDate >= openDate && isToday(saleDate);
+      return saleDate >= openDate;
     });
   }, [sales, cashRegisters]);
 
@@ -126,13 +126,13 @@ export default function Dashboard() {
   const todayExtraIncome = useMemo(() => {
     const currentRegister = cashRegisters.find(r => r.status === 'open');
     if (!currentRegister) return 0;
-    return isToday(new Date(currentRegister.openedAt)) ? (currentRegister.extraIncome || 0) : 0;
+    return currentRegister.extraIncome || 0;
   }, [cashRegisters]);
 
   const todayWithdrawals = useMemo(() => {
     const currentRegister = cashRegisters.find(r => r.status === 'open');
     if (!currentRegister) return 0;
-    return isToday(new Date(currentRegister.openedAt)) ? (currentRegister.withdrawals || 0) : 0;
+    return currentRegister.withdrawals || 0;
   }, [cashRegisters]);
 
   const weekExtraIncome = useMemo(() => {
