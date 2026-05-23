@@ -240,7 +240,7 @@ export default function Inventory() {
   }, [products]);
 
   const filteredProducts = products.filter(p => {
-    if (stockFilter === 'low' && (!p.tracksInventory || p.stock > p.minStock || p.stock <= 0)) return false;
+    if (stockFilter === 'low' && (!p.tracksInventory || p.stock > p.minStock)) return false;
     if (stockFilter === 'zero' && (!p.tracksInventory || p.stock > 0)) return false;
     if (stockFilter === 'no_sales' && soldInLast30Days.has(p.id)) return false;
     if (stockFilter === 'expired') {
