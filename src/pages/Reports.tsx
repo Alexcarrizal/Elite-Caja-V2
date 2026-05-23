@@ -29,22 +29,86 @@ export default function Reports() {
     }
   }, [currentUser, navigate]);
 
+  const [filterType, setFilterType] = useState<'relative' | 'specific_week' | 'specific_month' | 'specific_year'>('relative');
   const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'year'>('week');
+  const [selectedWeekDate, setSelectedWeekDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [selectedMonthYear, setSelectedMonthYear] = useState<number>(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
   if (currentUser?.role === 'Cajero') {
     return null;
   }
 
+  const currentPeriodRange = useMemo(() => {
+    if (filterType === 'relative') {
+      const now = new Date();
+      let startDate = startOfDay(now);
+      if (dateRange === 'today') startDate = startOfDay(now);
+      else if (dateRange === 'week') startDate = startOfDay(subDays(now, 7));
+      else if (dateRange === 'month') startDate = startOfDay(subDays(now, 30));
+      else if (dateRange === 'year') startDate = startOfDay(subDays(now, 365));
+      return { start: startDate, end: new Date() };
+    }
+    
+    if (filterType === 'specific_week') {
+      const refDate = new Date(selectedWeekDate + 'T12:00:00');
+      const day = refDate.getDay();
+      const diffToMonday = refDate.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(refDate);
+      monday.setDate(diffToMonday);
+      monday.setHours(0, 0, 0, 0);
+      
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+      
+      return { start: monday, end: sunday };
+    }
+    
+    if (filterType === 'specific_month') {
+      const firstDay = new Date(selectedMonthYear, selectedMonth, 1, 0, 0, 0, 0);
+      const lastDay = new Date(selectedMonthYear, selectedMonth + 1, 0, 23, 59, 59, 999);
+      return { start: firstDay, end: lastDay };
+    }
+    
+    if (filterType === 'specific_year') {
+      const firstDay = new Date(selectedYear, 0, 1, 0, 0, 0, 0);
+      const lastDay = new Date(selectedYear, 11, 31, 23, 59, 59, 999);
+      return { start: firstDay, end: lastDay };
+    }
+    
+    return { start: new Date(0), end: new Date() };
+  }, [filterType, dateRange, selectedWeekDate, selectedMonth, selectedMonthYear, selectedYear]);
+
+  const periodText = useMemo(() => {
+    if (filterType === 'relative') {
+      return dateRange === 'today' ? 'Hoy' 
+        : dateRange === 'week' ? 'Últimos 7 días' 
+        : dateRange === 'month' ? 'Últimos 30 días' 
+        : 'Último año';
+    }
+    if (filterType === 'specific_week') {
+      const { start, end } = currentPeriodRange;
+      return `Semana del ${format(start, 'dd/MM/yyyy')} al ${format(end, 'dd/MM/yyyy')}`;
+    }
+    if (filterType === 'specific_month') {
+      const { start } = currentPeriodRange;
+      return `Mes de ${format(start, 'MMMM yyyy', { locale: es })}`;
+    }
+    if (filterType === 'specific_year') {
+      return `Año ${selectedYear}`;
+    }
+    return '';
+  }, [filterType, dateRange, currentPeriodRange, selectedYear]);
+
   const filteredSales = useMemo(() => {
-    const now = new Date();
-    let startDate = startOfDay(now);
-
-    if (dateRange === 'week') startDate = startOfDay(subDays(now, 7));
-    if (dateRange === 'month') startDate = startOfDay(subDays(now, 30));
-    if (dateRange === 'year') startDate = startOfDay(subDays(now, 365));
-
-    return sales.filter(s => isAfter(new Date(s.date), startDate));
-  }, [sales, dateRange]);
+    const { start, end } = currentPeriodRange;
+    return sales.filter(s => {
+      const saleDate = new Date(s.date);
+      return saleDate >= start && saleDate <= end;
+    });
+  }, [sales, currentPeriodRange]);
 
   const stats = useMemo(() => {
     const totalSales = filteredSales.reduce((sum, s) => sum + s.total, 0);
@@ -74,18 +138,20 @@ export default function Reports() {
     }, 0);
 
     // Include extra income and withdrawals for the period
-    const now = new Date();
-    let startDate = startOfDay(now);
-    if (dateRange === 'week') startDate = startOfDay(subDays(now, 7));
-    if (dateRange === 'month') startDate = startOfDay(subDays(now, 30));
-    if (dateRange === 'year') startDate = startOfDay(subDays(now, 365));
+    const { start, end } = currentPeriodRange;
 
     const periodExtraIncome = cashRegisters
-      .filter(r => new Date(r.openedAt) >= startDate)
+      .filter(r => {
+        const rDate = new Date(r.openedAt);
+        return rDate >= start && rDate <= end;
+      })
       .reduce((sum, r) => sum + (r.extraIncome || 0), 0);
 
     const periodWithdrawals = cashRegisters
-      .filter(r => new Date(r.openedAt) >= startDate)
+      .filter(r => {
+        const rDate = new Date(r.openedAt);
+        return rDate >= start && rDate <= end;
+      })
       .reduce((sum, r) => sum + (r.withdrawals || 0), 0);
 
     return {
@@ -97,23 +163,55 @@ export default function Reports() {
       taxes: totalTaxes,
       discounts: totalDiscounts
     };
-  }, [filteredSales, dateRange, cashRegisters]);
+  }, [filteredSales, currentPeriodRange, cashRegisters]);
 
   const salesAndProfitByDate = useMemo(() => {
     const data: Record<string, { date: string, total: number, profit: number }> = {};
+    const isYearly = filterType === 'specific_year' || (filterType === 'relative' && dateRange === 'year');
     
-    // Initialize last 7 days if week is selected
-    if (dateRange === 'week') {
+    // Initialize labels
+    if (filterType === 'relative' && dateRange === 'week') {
       for (let i = 6; i >= 0; i--) {
         const d = subDays(new Date(), i);
         const label = format(d, 'dd MMM', { locale: es });
         data[label] = { date: label, total: 0, profit: 0 };
       }
+    } else if (filterType === 'specific_week') {
+      const { start } = currentPeriodRange;
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        const label = format(d, 'dd MMM', { locale: es });
+        data[label] = { date: label, total: 0, profit: 0 };
+      }
+    } else if (filterType === 'specific_month') {
+      const { start } = currentPeriodRange;
+      const year = start.getFullYear();
+      const month = start.getMonth();
+      const numDays = new Date(year, month + 1, 0).getDate();
+      for (let i = 1; i <= numDays; i++) {
+        const d = new Date(year, month, i);
+        const label = format(d, 'dd MMM', { locale: es });
+        data[label] = { date: label, total: 0, profit: 0 };
+      }
+    } else if (isYearly) {
+      const year = filterType === 'specific_year' ? selectedYear : new Date().getFullYear();
+      for (let m = 0; m < 12; m++) {
+        const d = new Date(year, m, 1);
+        const label = format(d, 'MMM', { locale: es });
+        data[label] = { date: label, total: 0, profit: 0 };
+      }
     }
 
     filteredSales.forEach(s => {
-      const label = format(new Date(s.date), 'dd MMM', { locale: es });
-      if (!data[label]) data[label] = { date: label, total: 0, profit: 0 };
+      const sDate = new Date(s.date);
+      const label = isYearly 
+        ? format(sDate, 'MMM', { locale: es })
+        : format(sDate, 'dd MMM', { locale: es });
+        
+      if (!data[label]) {
+        data[label] = { date: label, total: 0, profit: 0 };
+      }
       
       data[label].total += s.total;
       
@@ -128,7 +226,7 @@ export default function Reports() {
     });
 
     return Object.values(data);
-  }, [filteredSales, dateRange]);
+  }, [filteredSales, filterType, dateRange, currentPeriodRange, selectedYear]);
 
   const paymentMethods = useMemo(() => {
     const data: Record<string, number> = {};
@@ -189,7 +287,7 @@ export default function Reports() {
     doc.setFontSize(18);
     doc.text('Reporte de Ventas', 14, 20);
     doc.setFontSize(12);
-    doc.text(`Periodo: ${dateRange === 'today' ? 'Hoy' : dateRange === 'week' ? 'Últimos 7 días' : dateRange === 'month' ? 'Últimos 30 días' : 'Último año'}`, 14, 30);
+    doc.text(`Periodo: ${periodText}`, 14, 30);
     doc.text(`Total Ventas: $${stats.totalSales.toFixed(2)}`, 14, 40);
     doc.text(`Costo de Productos: $${stats.totalCost.toFixed(2)}`, 14, 50);
     doc.text(`Ganancia Estimada: $${stats.totalProfit.toFixed(2)}`, 14, 60);
@@ -238,46 +336,192 @@ export default function Reports() {
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Analiza el rendimiento de tu negocio</p>
         </div>
-        <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
-          {(['today', 'week', 'month', 'year'] as const).map((range) => (
-            <button
-              key={range}
-              onClick={() => setDateRange(range)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                dateRange === range 
-                  ? 'bg-blue-600 text-white shadow-md' 
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
-            >
-              {range === 'today' ? 'Hoy' : range === 'week' ? 'Última Semana' : range === 'month' ? 'Último Mes' : 'Último Año'}
-            </button>
-          ))}
-          <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
-          <button 
-            onClick={() => window.location.reload()}
-            className="p-1.5 text-gray-500 hover:text-blue-600 transition-colors"
-            title="Refrescar"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <button 
-          onClick={exportExcel} 
-          className="flex items-center px-4 py-2 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100 dark:shadow-none"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Exportar Excel
-        </button>
-        <button 
-          onClick={exportPDF} 
-          className="flex items-center px-4 py-2 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-all shadow-md shadow-red-100 dark:shadow-none"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Exportar PDF
-        </button>
+      <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-wrap gap-2">
+            <button
+              id="btn-filter-relative"
+              onClick={() => setFilterType('relative')}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                filterType === 'relative'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-50 dark:bg-gray-700/50 text-gray-650 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              Período Rápido
+            </button>
+            <button
+              id="btn-filter-week"
+              onClick={() => setFilterType('specific_week')}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                filterType === 'specific_week'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-50 dark:bg-gray-700/50 text-gray-650 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              Por Semana
+            </button>
+            <button
+              id="btn-filter-month"
+              onClick={() => setFilterType('specific_month')}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                filterType === 'specific_month'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-50 dark:bg-gray-700/50 text-gray-650 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              Por Mes
+            </button>
+            <button
+              id="btn-filter-year"
+              onClick={() => setFilterType('specific_year')}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                filterType === 'specific_year'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-50 dark:bg-gray-700/50 text-gray-650 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              Por Año
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button 
+              id="btn-reports-reload"
+              onClick={() => window.location.reload()}
+              className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-xl text-gray-500 hover:text-blue-600 transition-colors border border-gray-150 dark:border-gray-700"
+              title="Refrescar"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Dynamic Controls depending on selected filterType */}
+        <div className="p-4 bg-gray-50 dark:bg-gray-900/30 rounded-xl border border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center gap-4 transition-all duration-200">
+          {filterType === 'relative' && (
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 pr-2 font-mono">Segmentos:</span>
+              {(['today', 'week', 'month', 'year'] as const).map((range) => (
+                <button
+                  key={range}
+                  id={`btn-range-${range}`}
+                  onClick={() => setDateRange(range)}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    dateRange === range 
+                      ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50' 
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                  }`}
+                >
+                  {range === 'today' ? 'Hoy' : range === 'week' ? 'Última Semana' : range === 'month' ? 'Último Mes' : 'Último Año'}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {filterType === 'specific_week' && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+              <div className="flex flex-col gap-1 min-w-[200px]">
+                <label className="text-xs font-bold text-gray-500 uppercase font-mono">Selecciona un día de la semana:</label>
+                <div className="relative">
+                  <input
+                    id="input-week-date"
+                    type="date"
+                    value={selectedWeekDate}
+                    onChange={(e) => setSelectedWeekDate(e.target.value)}
+                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-950 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                  <Calendar className="absolute right-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+              <div className="flex items-center bg-blue-500/10 dark:bg-blue-500/5 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-950 px-4 py-2.5 rounded-xl text-xs font-bold mt-2 sm:mt-auto">
+                <Calendar className="w-4 h-4 mr-2" />
+                Semana calculada: {periodText}
+              </div>
+            </div>
+          )}
+
+          {filterType === 'specific_month' && (
+            <div className="flex flex-wrap items-end gap-3 w-full">
+              <div className="flex flex-col gap-1 min-w-[150px]">
+                <label className="text-xs font-bold text-gray-500 uppercase font-mono">Mes:</label>
+                <select
+                  id="select-month"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-950 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map((m, idx) => (
+                    <option key={idx} value={idx}>{m}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1 min-w-[120px]">
+                <label className="text-xs font-bold text-gray-500 uppercase font-mono">Año:</label>
+                <select
+                  id="select-month-year"
+                  value={selectedMonthYear}
+                  onChange={(e) => setSelectedMonthYear(Number(e.target.value))}
+                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-950 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  {[2024, 2025, 2026, 2027, 2028].map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="bg-blue-500/10 dark:bg-blue-500/5 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-950 px-4 py-2.5 rounded-xl text-xs font-bold sm:mt-auto">
+                Rango: {periodText}
+              </div>
+            </div>
+          )}
+
+          {filterType === 'specific_year' && (
+            <div className="flex flex-wrap items-end gap-3 w-full">
+              <div className="flex flex-col gap-1 min-w-[150px]">
+                <label className="text-xs font-bold text-gray-500 uppercase font-mono">Año:</label>
+                <select
+                  id="select-year"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-950 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  {[2024, 2025, 2026, 2027, 2028].map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="bg-blue-500/10 dark:bg-blue-500/5 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-950 px-4 py-2.5 rounded-xl text-xs font-bold sm:mt-auto">
+                Rango: {periodText}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <div className="text-sm text-gray-800 dark:text-gray-200 font-bold">
+            Mostrando resultados para: <span className="text-blue-600 dark:text-blue-400 underline decoration-2">{periodText}</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button 
+              id="btn-export-excel"
+              onClick={exportExcel} 
+              className="flex items-center px-4 py-2 bg-emerald-600 text-white font-extrabold text-xs rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100 dark:shadow-none"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Exportar Excel
+            </button>
+            <button 
+              id="btn-export-pdf"
+              onClick={exportPDF} 
+              className="flex items-center px-4 py-2 bg-red-600 text-white font-extrabold text-xs rounded-xl hover:bg-red-700 transition-all shadow-md shadow-red-100 dark:shadow-none"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Exportar PDF
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Summary Cards */}
