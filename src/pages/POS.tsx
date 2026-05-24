@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useStore, defaultSettings } from '../store/useStore';
-import { Search, Plus, Minus, Trash2, CreditCard, Banknote, Smartphone, Receipt, ShoppingCart, Star, Check, Printer, ArrowRight, UserPlus, User, AlertTriangle, MessageCircle, Clock, Pause, Play } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, CreditCard, Banknote, Smartphone, Receipt, ShoppingCart, Star, Check, Printer, ArrowRight, UserPlus, User, AlertTriangle, MessageCircle, Clock, Pause, Play, ZoomIn } from 'lucide-react';
 import { generateReceiptPDF } from '../utils/pdf';
 import { shareReceiptWhatsApp } from '../utils/receiptImage';
 import { formatCurrency, capitalizeFirst } from '../utils/format';
 import { PaymentMethodType, Sale, Product } from '../types';
 import { AnimatePresence, motion } from 'motion/react';
 import BarcodeScannerModal from '../components/BarcodeScannerModal';
+import ProductImageModal from '../components/ProductImageModal';
 
 export default function POS() {
   const { 
@@ -79,6 +80,7 @@ export default function POS() {
 
   // Custom product state
   const [showCustomProductModal, setShowCustomProductModal] = useState(false);
+  const [zoomImage, setZoomImage] = useState<{ url: string; name: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Global barcode scanner listener
@@ -537,9 +539,22 @@ export default function POS() {
                         : 'bg-blue-50/50 dark:bg-blue-900/10 hover:shadow-md border-blue-100 dark:border-blue-800/30 hover:border-blue-300 dark:hover:border-blue-700'
                     }`}
                   >
-                    <div className="aspect-square w-full bg-white dark:bg-gray-800 rounded-lg mb-2 flex items-center justify-center overflow-hidden">
+                    <div className="relative aspect-square w-full bg-white dark:bg-gray-800 rounded-lg mb-2 flex items-center justify-center overflow-hidden">
                       {product.image ? (
-                        <img src={product.image} alt={product.name} className={`w-full h-full object-cover transition-transform ${product.tracksInventory && product.stock <= 0 ? '' : 'group-hover:scale-105'}`} referrerPolicy="no-referrer" />
+                        <>
+                          <img src={product.image} alt={product.name} className={`w-full h-full object-cover transition-transform ${product.tracksInventory && product.stock <= 0 ? '' : 'group-hover:scale-105'}`} referrerPolicy="no-referrer" />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setZoomImage({ url: product.image!, name: product.name });
+                            }}
+                            className="absolute bottom-1.5 right-1.5 p-1 bg-black/55 hover:bg-black/75 text-white rounded-md opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Zoom"
+                          >
+                            <ZoomIn className="w-3.5 h-3.5" />
+                          </button>
+                        </>
                       ) : (
                         <Receipt className="h-6 w-6 text-gray-300 dark:text-gray-600" />
                       )}
@@ -590,9 +605,22 @@ export default function POS() {
                     : 'bg-gray-50 dark:bg-gray-900 hover:shadow-md border-transparent hover:border-blue-200 dark:hover:border-blue-800'
                   }`}
                 >
-                  <div className="aspect-square w-full bg-white dark:bg-gray-800 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+                  <div className="relative aspect-square w-full bg-white dark:bg-gray-800 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
                     {product.image ? (
-                      <img src={product.image} alt={product.name} className={`w-full h-full object-cover transition-transform ${product.tracksInventory && product.stock <= 0 ? '' : 'group-hover:scale-105'}`} referrerPolicy="no-referrer" />
+                      <>
+                        <img src={product.image} alt={product.name} className={`w-full h-full object-cover transition-transform ${product.tracksInventory && product.stock <= 0 ? '' : 'group-hover:scale-105'}`} referrerPolicy="no-referrer" />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setZoomImage({ url: product.image!, name: product.name });
+                          }}
+                          className="absolute bottom-2 right-2 p-1.5 bg-black/55 hover:bg-black/75 text-white rounded-md opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Zoom"
+                        >
+                          <ZoomIn className="w-4 h-4" />
+                        </button>
+                      </>
                     ) : (
                       <Receipt className="h-8 w-8 text-gray-300 dark:text-gray-600" />
                     )}
@@ -1409,6 +1437,13 @@ export default function POS() {
              alert(`No se encontró ningún producto con el código de barras: ${decodedText}`);
           }
         }}
+      />
+
+      <ProductImageModal
+        isOpen={!!zoomImage}
+        onClose={() => setZoomImage(null)}
+        imageUrl={zoomImage?.url || ''}
+        productName={zoomImage?.name || ''}
       />
     </div>
   );

@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useStore, defaultSettings } from '../store/useStore';
 import { X, TrendingDown, Package } from 'lucide-react';
 import { formatCurrency } from '../utils/format';
+import ProductImageModal from './ProductImageModal';
 
 interface LessSoldProductsModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface LessSoldProductsModalProps {
 
 export default function LessSoldProductsModal({ isOpen, onClose }: LessSoldProductsModalProps) {
   const { sales = [], products = [], settings = defaultSettings } = useStore();
+  const [zoomImage, setZoomImage] = useState<{ url: string; name: string } | null>(null);
 
   const lessSoldProducts = useMemo(() => {
     // Calculate total sold quantity for each product across all sales
@@ -61,7 +63,11 @@ export default function LessSoldProductsModal({ isOpen, onClose }: LessSoldProdu
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {lessSoldProducts.map((product) => (
                 <div key={product.id} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                  <div className="h-12 w-12 rounded-lg bg-white dark:bg-gray-700 overflow-hidden border border-gray-100 dark:border-gray-600 shrink-0">
+                  <div 
+                    className={`h-12 w-12 rounded-lg bg-white dark:bg-gray-700 overflow-hidden border border-gray-100 dark:border-gray-600 shrink-0 ${product.image ? 'cursor-zoom-in hover:ring-2 hover:ring-blue-500 hover:shadow-md transition-all' : ''}`}
+                    onClick={() => product.image && setZoomImage({ url: product.image, name: product.name })}
+                    title={product.image ? "Click para ampliar" : undefined}
+                  >
                     {product.image ? (
                       <img src={product.image} alt={product.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
@@ -93,6 +99,13 @@ export default function LessSoldProductsModal({ isOpen, onClose }: LessSoldProdu
           </button>
         </div>
       </div>
+
+      <ProductImageModal
+        isOpen={!!zoomImage}
+        onClose={() => setZoomImage(null)}
+        imageUrl={zoomImage?.url || ''}
+        productName={zoomImage?.name || ''}
+      />
     </div>
   );
 }

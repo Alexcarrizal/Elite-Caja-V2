@@ -12,6 +12,7 @@ import { formatCurrency, capitalizeFirst } from '../utils/format';
 import { uploadImageToFirebase } from '../utils/imageUpload';
 import ReactBarcode from 'react-barcode';
 import { motion, AnimatePresence } from 'motion/react';
+import ProductImageModal from '../components/ProductImageModal';
 
 export default function Inventory() {
   const { 
@@ -31,6 +32,7 @@ export default function Inventory() {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'zero' | 'no_sales' | 'expired'>('all');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [zoomImage, setZoomImage] = useState<{ url: string; name: string } | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const barcodeRef = useRef<HTMLDivElement>(null);
   const [barcodePdfOptions, setBarcodePdfOptions] = useState({ show: false, width: 5.0, height: 2.5, quantity: 1 });
@@ -830,7 +832,11 @@ export default function Inventory() {
                 <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                   <td className="p-4">
                     <div className="flex items-center space-x-3">
-                      <div className="h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden flex-shrink-0">
+                      <div 
+                        className={`h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden flex-shrink-0 ${product.image ? 'cursor-zoom-in hover:ring-2 hover:ring-blue-500 hover:shadow-md transition-all' : ''}`}
+                        onClick={() => product.image && setZoomImage({ url: product.image, name: product.name })}
+                        title={product.image ? "Click para ampliar" : undefined}
+                      >
                         {product.image ? (
                           <img src={product.image} alt={product.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
@@ -1565,6 +1571,13 @@ export default function Inventory() {
           </div>
         </div>
       )}
+
+      <ProductImageModal
+        isOpen={!!zoomImage}
+        onClose={() => setZoomImage(null)}
+        imageUrl={zoomImage?.url || ''}
+        productName={zoomImage?.name || ''}
+      />
     </div>
   );
 }

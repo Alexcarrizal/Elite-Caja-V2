@@ -38,6 +38,7 @@ import { Link } from 'react-router-dom';
 import StockReplenishmentModal from '../components/StockReplenishmentModal';
 import QuickMovementModal from '../components/QuickMovementModal';
 import LessSoldProductsModal from '../components/LessSoldProductsModal';
+import ProductImageModal from '../components/ProductImageModal';
 
 export default function Dashboard() {
   const { 
@@ -61,6 +62,7 @@ export default function Dashboard() {
   const [isReplenishModalOpen, setIsReplenishModalOpen] = useState(false);
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
   const [isLessSoldModalOpen, setIsLessSoldModalOpen] = useState(false);
+  const [zoomImage, setZoomImage] = useState<{ url: string; name: string } | null>(null);
   const [adjustmentType, setAdjustmentType] = useState<'entrada' | 'salida'>('entrada');
 
   const todaySales = useMemo(() => {
@@ -540,7 +542,11 @@ export default function Dashboard() {
               lowStockProducts.map(product => (
                 <div key={product.id} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
                   <div className="flex items-center space-x-3">
-                    <div className="h-10 w-10 rounded-lg bg-white dark:bg-gray-800 overflow-hidden flex-shrink-0">
+                    <div 
+                      className={`h-10 w-10 rounded-lg bg-white dark:bg-gray-800 overflow-hidden flex-shrink-0 ${product.image ? 'cursor-zoom-in hover:ring-2 hover:ring-red-500/55 hover:shadow-sm transition-all' : ''}`}
+                      onClick={() => product.image && setZoomImage({ url: product.image, name: product.name })}
+                      title={product.image ? "Click para ampliar" : undefined}
+                    >
                       {product.image ? (
                         <img src={product.image} alt={product.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
@@ -626,6 +632,13 @@ export default function Dashboard() {
       <LessSoldProductsModal
         isOpen={isLessSoldModalOpen}
         onClose={() => setIsLessSoldModalOpen(false)}
+      />
+
+      <ProductImageModal
+        isOpen={!!zoomImage}
+        onClose={() => setZoomImage(null)}
+        imageUrl={zoomImage?.url || ''}
+        productName={zoomImage?.name || ''}
       />
     </motion.div>
   );

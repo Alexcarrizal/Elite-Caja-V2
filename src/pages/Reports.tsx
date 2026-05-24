@@ -9,6 +9,7 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
+import ProductImageModal from '../components/ProductImageModal';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
 
@@ -35,6 +36,7 @@ export default function Reports() {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [selectedMonthYear, setSelectedMonthYear] = useState<number>(new Date().getFullYear());
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [zoomImage, setZoomImage] = useState<{ url: string; name: string } | null>(null);
 
   if (currentUser?.role === 'Cajero') {
     return null;
@@ -703,7 +705,11 @@ export default function Reports() {
                 {topProfitableProducts.map((product, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700">
                     <div className="flex items-center space-x-3">
-                      <div className="h-10 w-10 rounded-lg bg-white dark:bg-gray-800 overflow-hidden border border-gray-100 dark:border-gray-700 shrink-0">
+                      <div 
+                        className={`h-10 w-10 rounded-lg bg-white dark:bg-gray-800 overflow-hidden border border-gray-100 dark:border-gray-700 shrink-0 ${product.image ? 'cursor-zoom-in hover:ring-2 hover:ring-blue-500 hover:shadow-md transition-all' : ''}`}
+                        onClick={() => product.image && setZoomImage({ url: product.image, name: product.name })}
+                        title={product.image ? "Click para ampliar" : undefined}
+                      >
                         {product.image ? (
                           <img src={product.image} alt={product.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
@@ -745,7 +751,11 @@ export default function Reports() {
                 {lowRotationProducts.map((product, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700">
                     <div className="flex items-center space-x-3">
-                      <div className="h-10 w-10 rounded-lg bg-white dark:bg-gray-800 overflow-hidden border border-gray-100 dark:border-gray-700 shrink-0">
+                      <div 
+                        className={`h-10 w-10 rounded-lg bg-white dark:bg-gray-800 overflow-hidden border border-gray-100 dark:border-gray-700 shrink-0 ${product.image ? 'cursor-zoom-in hover:ring-2 hover:ring-blue-500 hover:shadow-md transition-all' : ''}`}
+                        onClick={() => product.image && setZoomImage({ url: product.image, name: product.name })}
+                        title={product.image ? "Click para ampliar" : undefined}
+                      >
                         {product.image ? (
                           <img src={product.image} alt={product.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
@@ -823,6 +833,13 @@ export default function Reports() {
           </div>
         </div>
       </div>
+
+      <ProductImageModal
+        isOpen={!!zoomImage}
+        onClose={() => setZoomImage(null)}
+        imageUrl={zoomImage?.url || ''}
+        productName={zoomImage?.name || ''}
+      />
     </div>
   );
 }
