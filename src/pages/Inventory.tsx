@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useStore, defaultSettings } from '../store/useStore';
 import { Product } from '../types';
-import { Plus, Search, Edit2, Trash2, Download, Upload, Barcode as BarcodeIcon, History, Package, AlertTriangle, ClipboardList, Clock, Loader2, Sparkles } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Download, Upload, Barcode as BarcodeIcon, History, Package, AlertTriangle, ClipboardList, Clock, Loader2, Sparkles, Copy } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -276,6 +276,22 @@ export default function Inventory() {
         purchaseDate: getTodayString()
       });
     }
+    setIsModalOpen(true);
+  };
+
+  const handleDuplicateProduct = (product: Product) => {
+    setIsUSDEnabled(false);
+    setPurchasePriceUSD('');
+    setSalePriceUSD('');
+    setRateStatus({ status: 'idle', message: '' });
+    setEditingProduct(null); // It is a new duplicate, so editingProduct is null
+    setFormData({
+      ...defaultProduct,
+      ...product,
+      name: `${product.name} (copia)`,
+      barcode: '', // Clear the barcode as it must be unique
+      purchaseDate: getTodayString()
+    });
     setIsModalOpen(true);
   };
 
@@ -758,10 +774,25 @@ export default function Inventory() {
                   <td className="p-4 text-right">
                     {currentUser?.role !== 'Cajero' && (
                       <div className="flex justify-end space-x-2">
-                        <button onClick={() => handleOpenModal(product)} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
+                        <button 
+                          onClick={() => handleDuplicateProduct(product)} 
+                          className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors"
+                          title="Duplicar producto"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleOpenModal(product)} 
+                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                          title="Editar"
+                        >
                           <Edit2 className="h-4 w-4" />
                         </button>
-                        <button onClick={() => deleteProduct(product.id)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors">
+                        <button 
+                          onClick={() => deleteProduct(product.id)} 
+                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                          title="Eliminar"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
