@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useStore, defaultSettings } from '../store/useStore';
 import { Product } from '../types';
-import { Plus, Search, Edit2, Trash2, Download, Upload, Barcode as BarcodeIcon, History, Package, AlertTriangle, ClipboardList, Clock, Loader2, Sparkles, Copy } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Download, Upload, Barcode as BarcodeIcon, History, Package, AlertTriangle, ClipboardList, Clock, Loader2, Sparkles, Copy, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -239,23 +239,80 @@ export default function Inventory() {
     }, 0);
   }, [products]);
 
-  const filteredProducts = products.filter(p => {
-    if (stockFilter === 'low' && (!p.tracksInventory || p.stock > p.minStock)) return false;
-    if (stockFilter === 'zero' && (!p.tracksInventory || p.stock > 0)) return false;
-    if (stockFilter === 'no_sales' && soldInLast30Days.has(p.id)) return false;
-    if (stockFilter === 'expired') {
-      if (!p.expirationDate || new Date(p.expirationDate) >= new Date()) return false;
+  const [sortBy, setSortBy] = useState<'default' | 'name' | 'salePrice' | 'purchasePrice' | 'stock' | 'category'>('default');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = (field: 'name' | 'salePrice' | 'purchasePrice' | 'stock' | 'category') => {
+    if (sortBy === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      if (stockFilter === 'low' && (!p.tracksInventory || p.stock > p.minStock)) return false;
+      if (stockFilter === 'zero' && (!p.tracksInventory || p.stock > 0)) return false;
+      if (stockFilter === 'no_sales' && soldInLast30Days.has(p.id)) return false;
+      if (stockFilter === 'expired') {
+        if (!p.expirationDate || new Date(p.expirationDate) >= new Date()) return false;
+      }
+
+      if (selectedCategory !== 'all' && (p.category || '').toLowerCase() !== selectedCategory.toLowerCase()) return false;
+
+      const term = searchTerm.toLowerCase();
+      return (p.name && p.name.toLowerCase().includes(term)) || 
+        (p.barcode && String(p.barcode).toLowerCase().includes(term)) ||
+        (p.category && p.category.toLowerCase().includes(term)) ||
+        (p.subcategory && p.subcategory.toLowerCase().includes(term)) ||
+        (p.supplier && p.supplier.toLowerCase().includes(term));
+    });
+  }, [products, stockFilter, soldInLast30Days, selectedCategory, searchTerm]);
+
+  const sortedProducts = useMemo(() => {
+    if (sortBy === 'default') {
+      return filteredProducts;
     }
 
-    if (selectedCategory !== 'all' && (p.category || '').toLowerCase() !== selectedCategory.toLowerCase()) return false;
+    return [...filteredProducts].sort((a, b) => {
+      let valA: any = '';
+      let valB: any = '';
 
-    const term = searchTerm.toLowerCase();
-    return (p.name && p.name.toLowerCase().includes(term)) || 
-      (p.barcode && String(p.barcode).toLowerCase().includes(term)) ||
-      (p.category && p.category.toLowerCase().includes(term)) ||
-      (p.subcategory && p.subcategory.toLowerCase().includes(term)) ||
-      (p.supplier && p.supplier.toLowerCase().includes(term));
-  });
+      if (sortBy === 'name') {
+        valA = (a.name || '').toLowerCase();
+        valB = (b.name || '').toLowerCase();
+      } else if (sortBy === 'salePrice') {
+        valA = a.salePrice || 0;
+        valB = b.salePrice || 0;
+      } else if (sortBy === 'purchasePrice') {
+        valA = a.purchasePrice || 0;
+        valB = b.purchasePrice || 0;
+      } else if (sortBy === 'stock') {
+        const stockA = a.tracksInventory ? (a.stock || 0) : Infinity;
+        const stockB = b.tracksInventory ? (b.stock || 0) : Infinity;
+        valA = stockA;
+        valB = stockB;
+      } else if (sortBy === 'category') {
+        valA = (a.category || '').toLowerCase();
+        valB = (b.category || '').toLowerCase();
+      }
+
+      if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+      if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredProducts, sortBy, sortDirection]);
+
+  const renderSortIcon = (field: 'name' | 'salePrice' | 'purchasePrice' | 'stock' | 'category') => {
+    if (sortBy !== field) {
+      return <ArrowUpDown className="w-3.5 h-3.5 ml-1 text-gray-400 opacity-40 group-hover:opacity-100 transition-opacity" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="w-3.5 h-3.5 ml-1 text-blue-600 dark:text-blue-400" />
+      : <ArrowDown className="w-3.5 h-3.5 ml-1 text-blue-600 dark:text-blue-400" />;
+  };
 
   const handleOpenModal = (product?: Product) => {
     setIsUSDEnabled(false);
@@ -641,12 +698,12 @@ export default function Inventory() {
               />
             </div>
 
-            {/* Separate category buttons / selector dropdown */}
-            <div className="flex gap-2">
+            {/* Separate category & sorting controls */}
+            <div className="flex gap-2 flex-wrap sm:flex-nowrap">
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer min-w-[180px]"
+                className="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer min-w-[170px] flex-grow sm:flex-grow-0"
               >
                 <option value="all">📁 Todas las Categorías</option>
                 {categories.map((c) => (
@@ -656,10 +713,31 @@ export default function Inventory() {
                 ))}
               </select>
 
+              <select
+                value={`${sortBy}-${sortDirection}`}
+                onChange={(e) => {
+                  const [field, dir] = e.target.value.split('-');
+                  setSortBy(field as any);
+                  setSortDirection(dir as any);
+                }}
+                className="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer min-w-[170px] flex-grow sm:flex-grow-0"
+                title="Ordenar productos por"
+              >
+                <option value="default-asc">🔀 Orden por defecto</option>
+                <option value="name-asc">🔤 Nombre: A-Z</option>
+                <option value="name-desc">🔤 Nombre: Z-A</option>
+                <option value="salePrice-asc">💵 Precio Venta: Bajo a Alto</option>
+                <option value="salePrice-desc">💵 Precio Venta: Alto a Bajo</option>
+                <option value="stock-asc">📦 Stock: Bajo a Alto</option>
+                <option value="stock-desc">📦 Stock: Alto a Bajo</option>
+                <option value="category-asc">📁 Categoría: A-Z</option>
+                <option value="category-desc">📁 Categoría: Z-A</option>
+              </select>
+
               {selectedCategory !== 'all' && (
                 <button
                   onClick={() => setSelectedCategory('all')}
-                  className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-650 dark:bg-red-900/20 dark:text-red-400 rounded-lg text-xs font-semibold transition-colors"
+                  className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-650 dark:bg-red-900/20 dark:text-red-400 rounded-lg text-xs font-semibold transition-colors flex-shrink-0"
                 >
                   Limpiar Filtro
                 </button>
@@ -704,15 +782,51 @@ export default function Inventory() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-gray-50 dark:bg-gray-900/50 sticky top-0 z-10">
               <tr>
-                <th className="p-4 font-medium text-gray-500 dark:text-gray-400 text-sm">Producto</th>
-                <th className="p-4 font-medium text-gray-500 dark:text-gray-400 text-sm">Categoría</th>
-                <th className="p-4 font-medium text-gray-500 dark:text-gray-400 text-sm">Precio Venta</th>
-                <th className="p-4 font-medium text-gray-500 dark:text-gray-400 text-sm">Stock</th>
-                <th className="p-4 font-medium text-gray-500 dark:text-gray-400 text-sm text-right">Acciones</th>
+                <th 
+                  onClick={() => handleSort('name')}
+                  className="p-4 font-medium text-gray-500 dark:text-gray-400 text-sm cursor-pointer hover:bg-gray-150/50 dark:hover:bg-gray-800 transition-colors group select-none"
+                  title="Ordenar por Producto"
+                >
+                  <div className="flex items-center">
+                    Producto
+                    {renderSortIcon('name')}
+                  </div>
+                </th>
+                <th 
+                  onClick={() => handleSort('category')}
+                  className="p-4 font-medium text-gray-500 dark:text-gray-400 text-sm cursor-pointer hover:bg-gray-150/50 dark:hover:bg-gray-800 transition-colors group select-none"
+                  title="Ordenar por Categoría"
+                >
+                  <div className="flex items-center">
+                    Categoría
+                    {renderSortIcon('category')}
+                  </div>
+                </th>
+                <th 
+                  onClick={() => handleSort('salePrice')}
+                  className="p-4 font-medium text-gray-500 dark:text-gray-400 text-sm cursor-pointer hover:bg-gray-150/50 dark:hover:bg-gray-800 transition-colors group select-none"
+                  title="Ordenar por Precio"
+                >
+                  <div className="flex items-center">
+                    Precio Venta
+                    {renderSortIcon('salePrice')}
+                  </div>
+                </th>
+                <th 
+                  onClick={() => handleSort('stock')}
+                  className="p-4 font-medium text-gray-500 dark:text-gray-400 text-sm cursor-pointer hover:bg-gray-150/50 dark:hover:bg-gray-800 transition-colors group select-none"
+                  title="Ordenar por Stock"
+                >
+                  <div className="flex items-center">
+                    Stock
+                    {renderSortIcon('stock')}
+                  </div>
+                </th>
+                <th className="p-4 font-medium text-gray-500 dark:text-gray-400 text-sm text-right select-none">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {filteredProducts.map((product) => (
+              {sortedProducts.map((product) => (
                 <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                   <td className="p-4">
                     <div className="flex items-center space-x-3">
@@ -800,7 +914,7 @@ export default function Inventory() {
                   </td>
                 </tr>
               ))}
-              {filteredProducts.length === 0 && (
+              {sortedProducts.length === 0 && (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-gray-500 dark:text-gray-400">
                     No se encontraron productos.
