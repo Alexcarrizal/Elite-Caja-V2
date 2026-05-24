@@ -29,6 +29,7 @@ interface AppState {
     monthSales: boolean;
     todaySales: boolean;
     productCost: boolean;
+    streamingCost: boolean;
   };
   
   // Actions
@@ -149,6 +150,7 @@ export const useStore = create<AppState>()(
         monthSales: true,
         todaySales: true,
         productCost: true,
+        streamingCost: true,
       },
 
       setFirebaseUser: (user) => set({ firebaseUser: user }),
@@ -160,6 +162,7 @@ export const useStore = create<AppState>()(
           monthSales: true,
           todaySales: true,
           productCost: true,
+          streamingCost: true,
         };
         return {
           dashboardVisibility: {

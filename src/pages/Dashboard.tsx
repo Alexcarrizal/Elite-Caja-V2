@@ -23,7 +23,8 @@ import {
   MinusCircle,
   ClipboardList,
   PackagePlus,
-  TrendingDown
+  TrendingDown,
+  Tv
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -53,6 +54,7 @@ export default function Dashboard() {
       monthSales: true,
       todaySales: true,
       productCost: true,
+      streamingCost: true,
     },
     toggleDashboardVisibility
   } = useStore();
@@ -174,6 +176,19 @@ export default function Dashboard() {
   const todayProductCost = useMemo(() => {
     return todaySales.reduce((sum, s) => {
       const cost = (s.items || []).reduce((itemSum, item) => {
+        if (item.category?.toLowerCase() === 'streaming') return itemSum;
+        const purchasePrice = Number(item.purchasePrice) || 0;
+        const qty = Number(item.quantity) || 0;
+        return itemSum + (purchasePrice * qty);
+      }, 0);
+      return sum + cost;
+    }, 0);
+  }, [todaySales]);
+
+  const todayStreamingCost = useMemo(() => {
+    return todaySales.reduce((sum, s) => {
+      const cost = (s.items || []).reduce((itemSum, item) => {
+        if (item.category?.toLowerCase() !== 'streaming') return itemSum;
         const purchasePrice = Number(item.purchasePrice) || 0;
         const qty = Number(item.quantity) || 0;
         return itemSum + (purchasePrice * qty);
@@ -185,6 +200,19 @@ export default function Dashboard() {
   const weekProductCost = useMemo(() => {
     return weekSales.reduce((sum, s) => {
       const cost = (s.items || []).reduce((itemSum, item) => {
+        if (item.category?.toLowerCase() === 'streaming') return itemSum;
+        const purchasePrice = Number(item.purchasePrice) || 0;
+        const qty = Number(item.quantity) || 0;
+        return itemSum + (purchasePrice * qty);
+      }, 0);
+      return sum + cost;
+    }, 0);
+  }, [weekSales]);
+
+  const weekStreamingCost = useMemo(() => {
+    return weekSales.reduce((sum, s) => {
+      const cost = (s.items || []).reduce((itemSum, item) => {
+        if (item.category?.toLowerCase() !== 'streaming') return itemSum;
         const purchasePrice = Number(item.purchasePrice) || 0;
         const qty = Number(item.quantity) || 0;
         return itemSum + (purchasePrice * qty);
@@ -338,7 +366,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className={`grid gap-6 grid-cols-1 md:grid-cols-2 ${currentUser?.role === 'Cajero' ? 'lg:grid-cols-3' : 'lg:grid-cols-5'}`}>
+      <div className={`grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${currentUser?.role === 'Cajero' ? '' : 'xl:grid-cols-6'}`}>
         <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between mb-3">
             <div className="h-10 w-10 bg-orange-50 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400">
@@ -365,7 +393,7 @@ export default function Dashboard() {
               </button>
             </div>
             <p className="text-xs font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">GANANCIA NETA (SEMANAL)</p>
-            <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-green-600 dark:text-green-400 mt-1.5">
+            <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-green-600 dark:text-green-400 mt-1.5 line-clamp-1">
               {dashboardVisibility?.netProfit !== false ? formatCurrency(weekNetProfit, settings?.currency) : '••••••'}
             </h3>
           </motion.div>
@@ -381,9 +409,26 @@ export default function Dashboard() {
                 {dashboardVisibility?.productCost !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-xs font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">COSTO DE PRODUCTOS (SEMANAL)</p>
-            <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-red-600 dark:text-red-400 mt-1.5">
+            <p className="text-xs font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">COSTO PRODUCTOS (SEMANAL)</p>
+            <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-red-600 dark:text-red-400 mt-1.5 line-clamp-1">
               {dashboardVisibility?.productCost !== false ? formatCurrency(weekProductCost, settings?.currency) : '••••••'}
+            </h3>
+          </motion.div>
+        )}
+
+        {currentUser?.role !== 'Cajero' && (
+          <motion.div whileHover={{ y: -4 }} className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-3">
+              <div className="h-10 w-10 bg-violet-50 dark:bg-violet-900/30 rounded-full flex items-center justify-center text-violet-600 dark:text-violet-400">
+                <Tv className="w-5 h-5" />
+              </div>
+              <button onClick={() => toggleDashboardVisibility('streamingCost')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                {dashboardVisibility?.streamingCost !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              </button>
+            </div>
+            <p className="text-xs font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">COSTO STREAMING (SEMANAL)</p>
+            <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-violet-600 dark:text-violet-400 mt-1.5 line-clamp-1">
+              {dashboardVisibility?.streamingCost !== false ? formatCurrency(weekStreamingCost, settings?.currency) : '••••••'}
             </h3>
           </motion.div>
         )}
