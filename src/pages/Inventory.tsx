@@ -38,6 +38,11 @@ export default function Inventory() {
   const [barcodePdfOptions, setBarcodePdfOptions] = useState({ show: false, width: 5.0, height: 2.5, quantity: 1 });
   const [percentMode, setPercentMode] = useState<'cost' | 'margin'>('cost');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all');
+
+  useEffect(() => {
+    setSelectedSubcategory('all');
+  }, [selectedCategory]);
   const [isUSDEnabled, setIsUSDEnabled] = useState<boolean>(false);
   const [purchasePriceUSD, setPurchasePriceUSD] = useState<number | ''>('');
   const [salePriceUSD, setSalePriceUSD] = useState<number | ''>('');
@@ -171,8 +176,11 @@ export default function Inventory() {
   }, [products]);
 
   const subcategories = useMemo(() => {
-    return Array.from(new Set(products.map(p => p.subcategory).filter(Boolean))).sort();
-  }, [products]);
+    const filtered = selectedCategory && selectedCategory !== 'all'
+      ? products.filter(p => (p.category || '').toLowerCase() === selectedCategory.toLowerCase())
+      : products;
+    return Array.from(new Set(filtered.map(p => p.subcategory).filter(Boolean))).sort();
+  }, [products, selectedCategory]);
 
   const suppliers = useMemo(() => {
     return storeSuppliers.map(s => s.name).sort();
@@ -263,6 +271,7 @@ export default function Inventory() {
       }
 
       if (selectedCategory !== 'all' && (p.category || '').toLowerCase() !== selectedCategory.toLowerCase()) return false;
+      if (selectedSubcategory !== 'all' && (p.subcategory || '').toLowerCase() !== selectedSubcategory.toLowerCase()) return false;
 
       const term = searchTerm.toLowerCase();
       return (p.name && p.name.toLowerCase().includes(term)) || 
@@ -271,7 +280,7 @@ export default function Inventory() {
         (p.subcategory && p.subcategory.toLowerCase().includes(term)) ||
         (p.supplier && p.supplier.toLowerCase().includes(term));
     });
-  }, [products, stockFilter, soldInLast30Days, selectedCategory, searchTerm]);
+  }, [products, stockFilter, soldInLast30Days, selectedCategory, selectedSubcategory, searchTerm]);
 
   const sortedProducts = useMemo(() => {
     if (sortBy === 'default') {
@@ -716,6 +725,20 @@ export default function Inventory() {
               </select>
 
               <select
+                value={selectedSubcategory}
+                onChange={(e) => setSelectedSubcategory(e.target.value)}
+                className="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-550 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer min-w-[170px] flex-grow sm:flex-grow-0"
+                title="Filtrar por Subcategoría"
+              >
+                <option value="all">🏷️ Todas las Subcategorías</option>
+                {subcategories.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+
+              <select
                 value={`${sortBy}-${sortDirection}`}
                 onChange={(e) => {
                   const [field, dir] = e.target.value.split('-');
@@ -736,10 +759,13 @@ export default function Inventory() {
                 <option value="category-desc">📁 Categoría: Z-A</option>
               </select>
 
-              {selectedCategory !== 'all' && (
+              {(selectedCategory !== 'all' || selectedSubcategory !== 'all') && (
                 <button
-                  onClick={() => setSelectedCategory('all')}
-                  className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-650 dark:bg-red-900/20 dark:text-red-400 rounded-lg text-xs font-semibold transition-colors flex-shrink-0"
+                  onClick={() => {
+                    setSelectedCategory('all');
+                    setSelectedSubcategory('all');
+                  }}
+                  className="px-3 py-2 bg-red-55 hover:bg-red-100 text-red-650 dark:bg-red-900/20 dark:text-red-400 rounded-lg text-xs font-semibold transition-colors flex-shrink-0"
                 >
                   Limpiar Filtro
                 </button>
@@ -774,6 +800,38 @@ export default function Inventory() {
                   }`}
                 >
                   {c}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Quick Click Subcategory Buttons / Pills */}
+          {subcategories.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 mr-1">
+                Subcategorías:
+              </span>
+              <button
+                onClick={() => setSelectedSubcategory('all')}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                  selectedSubcategory === 'all'
+                    ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-100 dark:shadow-none'
+                    : 'bg-gray-105 hover:bg-gray-200 dark:bg-gray-700/50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
+                }`}
+              >
+                Todas
+              </button>
+              {subcategories.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSelectedSubcategory(s)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                    selectedSubcategory.toLowerCase() === s.toLowerCase()
+                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-100 dark:shadow-none'
+                      : 'bg-gray-105 hover:bg-gray-200 dark:bg-gray-700/50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  {s}
                 </button>
               ))}
             </div>
