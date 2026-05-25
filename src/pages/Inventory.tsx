@@ -402,7 +402,7 @@ export default function Inventory() {
 
     const roundedData = {
       ...formData,
-      purchasePrice: Math.round(formData.purchasePrice),
+      purchasePrice: Number(formData.purchasePrice),
       salePrice: Math.round(formData.salePrice)
     };
 
@@ -1182,7 +1182,7 @@ export default function Inventory() {
                                   if (usdVal !== '') {
                                     setFormData(prev => ({
                                       ...prev,
-                                      purchasePrice: Math.round(usdVal * exchangeRate)
+                                      purchasePrice: Number((usdVal * exchangeRate).toFixed(2))
                                     }));
                                   } else {
                                     setFormData(prev => ({
@@ -1271,7 +1271,7 @@ export default function Inventory() {
                                 setFormData(prev => {
                                   const next = { ...prev };
                                   if (purchasePriceUSD !== '') {
-                                    next.purchasePrice = Math.round(Number(purchasePriceUSD) * rateVal);
+                                    next.purchasePrice = Number((Number(purchasePriceUSD) * rateVal).toFixed(2));
                                   }
                                   if (salePriceUSD !== '') {
                                     next.salePrice = Math.round(Number(salePriceUSD) * rateVal);
@@ -1322,7 +1322,7 @@ export default function Inventory() {
                           <input
                             required
                             type="number"
-                            step="1"
+                            step="0.01"
                             value={formData.purchasePrice || ''}
                             onChange={e => {
                               const val = Number(e.target.value);
@@ -1332,7 +1332,7 @@ export default function Inventory() {
                               }
                             }}
                             onBlur={e => {
-                              const val = Math.round(Number(e.target.value));
+                              const val = Number(e.target.value);
                               setFormData(prev => ({ ...prev, purchasePrice: val }));
                               if (isUSDEnabled && exchangeRate > 0) {
                                 setPurchasePriceUSD(Number((val / exchangeRate).toFixed(2)));
@@ -1477,11 +1477,11 @@ export default function Inventory() {
                       <div className="p-3 bg-blue-50/40 dark:bg-blue-950/20 rounded-lg border border-blue-100/50 dark:border-blue-900/20 flex justify-between items-center text-xs">
                         <div className="space-y-0.5 text-gray-500 dark:text-gray-400">
                           <span className="block font-medium">Rentabilidad:</span>
-                          <span>Cargado con costo ${formData.purchasePrice.toFixed(0)}</span>
+                          <span>Cargado con costo ${formData.purchasePrice % 1 === 0 ? formData.purchasePrice.toFixed(0) : formData.purchasePrice.toFixed(2)}</span>
                         </div>
                         <div className="text-right">
                           <span className="block font-bold text-blue-700 dark:text-blue-400">
-                            +${Math.round(formData.salePrice - formData.purchasePrice)} Ganancia
+                            +${(formData.salePrice - formData.purchasePrice).toFixed(2)} Ganancia
                           </span>
                           <span className="block text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
                             Margen Neto: {(((formData.salePrice - formData.purchasePrice) / formData.salePrice) * 100).toFixed(1)}%
