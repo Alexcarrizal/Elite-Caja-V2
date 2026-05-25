@@ -136,13 +136,14 @@ export const CloudSyncProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           return snap.docs.map(d => d.data());
         };
 
-        const [products, customers, sales, inventoryMovements, cashRegisters, syncedUsers] = await Promise.all([
+        const [products, customers, sales, inventoryMovements, cashRegisters, syncedUsers, suppliers] = await Promise.all([
           fetchCollection('products'),
           fetchCollection('customers'),
           fetchCollection('sales'),
           fetchCollection('inventoryMovements'),
           fetchCollection('cashRegisters'),
-          fetchCollection('users')
+          fetchCollection('users'),
+          fetchCollection('suppliers')
         ]);
 
         const defaultAdmin = {
@@ -162,6 +163,7 @@ export const CloudSyncProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           inventoryMovements: inventoryMovements as any,
           cashRegisters: cashRegisters as any,
           users: syncedUsers.length > 0 ? (syncedUsers as any) : [defaultAdmin],
+          suppliers: suppliers as any,
         });
 
         // Re-check the downloaded license to ensure it's not expired
@@ -240,6 +242,9 @@ export const CloudSyncProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
       if (state.users !== prev.users) {
         diffCollection('users', state.users, prev.users);
+      }
+      if (state.suppliers !== prev.suppliers) {
+        diffCollection('suppliers', state.suppliers, prev.suppliers);
       }
 
       stateRef.current = state;
