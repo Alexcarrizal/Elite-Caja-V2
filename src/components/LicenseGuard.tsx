@@ -8,7 +8,6 @@ import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { toast } from 'sonner';
 import { motion } from 'motion/react';
 import Logo from './Logo';
-import { generateLicenseKey } from '../utils/license';
 
 export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { 
@@ -28,10 +27,6 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
   const [success, setSuccess] = useState('');
   const [isCloudLoading, setIsCloudLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState('');
-
-  // Support generator state
-  const [clientEmailForKey, setClientEmailForKey] = useState('');
-  const [generatedKey, setGeneratedKey] = useState('');
 
   // Run initial check and set periodic check
   useEffect(() => {
@@ -113,16 +108,6 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const handleGenerateKeyForClient = () => {
-    if (!clientEmailForKey.trim()) {
-      toast.error('Ingresa un correo electrónico');
-      return;
-    }
-    const key = generateLicenseKey(clientEmailForKey.trim());
-    setGeneratedKey(key);
-    toast.success('Clave generada');
-  };
-
   // 1. If active status, let children mount directly
   if (license.status === 'active') {
     return <>{children}</>;
@@ -146,8 +131,6 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
       );
     }
   }
-
-  const isOwner = firebaseUser?.email?.toLowerCase().trim() === 'carrizalalex@gmail.com';
 
   // 3. Locked / Expired State - Activator View
   return (
@@ -258,50 +241,6 @@ export const LicenseGuard: React.FC<{ children: React.ReactNode }> = ({ children
               <div className="p-3 bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 border border-green-200/50 dark:border-green-900/50 rounded-xl flex items-center gap-2 text-xs mb-4">
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
                 <span>{success}</span>
-              </div>
-            )}
-
-            {/* Support section for owner 'carrizalalex@gmail.com' */}
-            {isOwner && (
-              <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
-                <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-3">
-                  🔐 Panel de Soporte Administrador
-                </p>
-                <div className="space-y-3 bg-blue-50/50 dark:bg-blue-950/20 p-4 rounded-xl border border-blue-100 dark:border-blue-900/20">
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-gray-500">
-                      Correo del Cliente
-                    </label>
-                    <input
-                      type="email"
-                      value={clientEmailForKey}
-                      onChange={(e) => setClientEmailForKey(e.target.value)}
-                      placeholder="correo@gmail.com"
-                      className="w-full mt-1 px-2.5 py-1.5 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-xs"
-                    />
-                  </div>
-                  <button
-                    onClick={handleGenerateKeyForClient}
-                    className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors"
-                  >
-                    Generar Clave de Licencia
-                  </button>
-                  {generatedKey && (
-                    <div className="mt-2 text-center">
-                      <p className="text-[10px] text-gray-400 font-bold uppercase">Clave Generada</p>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(generatedKey);
-                          toast.success('Clave copiada al portapapeles');
-                        }}
-                        className="mt-1 px-3 py-1.5 bg-gray-900 text-white font-mono text-xs rounded-lg flex items-center justify-center gap-1 w-full border border-gray-800 hover:bg-black"
-                      >
-                        <span className="font-bold">{generatedKey}</span>
-                        <Copy className="w-3 h-3 text-gray-400" />
-                      </button>
-                    </div>
-                  )}
-                </div>
               </div>
             )}
 

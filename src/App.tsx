@@ -18,6 +18,7 @@ import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Remissions from './pages/Remissions';
 import Warranties from './pages/Warranties';
+import LicensingPortal from './pages/LicensingPortal';
 import { useStore } from './store/useStore';
 import { Toaster } from 'sonner';
 import { LicenseGuard } from './components/LicenseGuard';
@@ -49,6 +50,9 @@ export default function App() {
       <HashRouter>
         <Toaster position="top-center" richColors />
         <Routes>
+          {/* Isolated Licensing Key Maker Portal */}
+          <Route path="/generador-licencias" element={<LicensingPortal />} />
+
           <Route path="*" element={
             <LicenseGuard>
               <Routes>

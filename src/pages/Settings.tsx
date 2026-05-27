@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { useStore, defaultSettings } from '../store/useStore';
 import { Save, Upload, Store, User, FileText, Settings as SettingsIcon, Download, Database, Lock, CreditCard, AlertTriangle, Trash2, Key, Monitor, Clock, CheckCircle2, Edit, Eye, EyeOff, Copy } from 'lucide-react';
 import { capitalizeFirst } from '../utils/format';
-import { generateLicenseKey } from '../utils/license';
 import { PaymentMethodType } from '../types';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -22,10 +21,6 @@ export default function Settings() {
 
   const [formData, setFormData] = useState(settings || defaultSettings);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Support Generator states
-  const [supportEmail, setSupportEmail] = useState('');
-  const [supportGeneratedKey, setSupportGeneratedKey] = useState('');
 
   // Users Admin states
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -470,68 +465,6 @@ export default function Settings() {
                       <span className="font-bold text-green-600 dark:text-green-400">
                         {format(new Date(license.activatedAt), "d 'de' MMMM, yyyy", { locale: es })}
                       </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Generador de Licencias */}
-              <div className="bg-gray-50 dark:bg-gray-900/40 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 space-y-4">
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Key className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                    Generador de Licencias de Soporte
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Crea claves de licencia vinculadas permanentemente al correo de Google del cliente para impedir compartirlas.
-                  </p>
-                </div>
-                
-                <div className="space-y-2.5 bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                      Correo del Cliente (Google)
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="cliente@gmail.com"
-                      value={supportEmail}
-                      onChange={(e) => setSupportEmail(e.target.value)}
-                      className="w-full mt-1 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs dark:text-white"
-                    />
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (!supportEmail.trim()) {
-                        toast.error('Por favor escribe un correo');
-                        return;
-                      }
-                      const key = generateLicenseKey(supportEmail.trim());
-                      setSupportGeneratedKey(key);
-                      toast.success('¡Clave de de licencia generada!');
-                    }}
-                    className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
-                  >
-                    Generar Licencia
-                  </button>
-                  {supportGeneratedKey && (
-                    <div className="mt-3 p-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-center space-y-1">
-                      <p className="text-[9px] text-gray-400 font-bold uppercase">Clave de Activación Unida</p>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-[11px] font-black text-indigo-600 dark:text-indigo-400 select-all break-all tracking-wide bg-white dark:bg-gray-950 px-2 py-1 rounded border border-gray-150 dark:border-gray-800 flex-1">
-                          {supportGeneratedKey}
-                        </span>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(supportGeneratedKey);
-                            toast.success('Clave de activación copiada');
-                          }}
-                          className="p-1 px-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
-                          title="Copiar"
-                        >
-                          <Copy className="w-3.5 h-3.5 text-gray-600" />
-                        </button>
-                      </div>
                     </div>
                   )}
                 </div>
