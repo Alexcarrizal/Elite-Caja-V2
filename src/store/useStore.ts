@@ -1005,7 +1005,24 @@ export const useStore = create<AppState>()(
         }
 
         if (state.license.status === 'trial' && state.license.trialEndDate) {
+          const startDate = state.license.trialStartDate ? new Date(state.license.trialStartDate) : new Date();
           const endDate = new Date(state.license.trialEndDate);
+          const durationMs = endDate.getTime() - startDate.getTime();
+
+          // If the stored trial is longer than 31 minutes (e.g. from the old 5-day trial), reset it to exactly 30 minutes from now
+          if (durationMs > 31 * 60 * 1000) {
+            const newStart = new Date();
+            const newEnd = new Date(newStart.getTime() + 30 * 60 * 1000);
+            set({
+              license: {
+                ...state.license,
+                trialStartDate: newStart.toISOString(),
+                trialEndDate: newEnd.toISOString()
+              }
+            });
+            return;
+          }
+
           if (now > endDate) {
             set({
               license: {
