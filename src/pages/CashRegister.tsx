@@ -100,6 +100,8 @@ export default function CashRegister() {
       }
       closeRegister(amount);
       if (logoutOnClose) {
+        // Wait 500ms for underlying state-driven cloudSync operations to finalize
+        await new Promise(resolve => setTimeout(resolve, 500));
         try {
           await signOut(auth);
         } catch(e) {

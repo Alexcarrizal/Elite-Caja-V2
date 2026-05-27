@@ -24,8 +24,9 @@ import {
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import Logo from './Logo';
-import { auth } from '../services/firebase';
+import { auth, db } from '../services/firebase';
 import { signOut } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -94,6 +95,33 @@ export default function Layout() {
   }
 
   const handleLogout = async () => {
+    // Check if there is an active/open cash register before logging out
+    const { cashRegisters = [], closeRegister } = useStore.getState();
+    const currentRegister = cashRegisters.find(r => r.status === 'open');
+    if (currentRegister) {
+      const closedRegister = {
+        ...currentRegister,
+        closedAt: new Date().toISOString(),
+        actualCash: currentRegister.expectedCash,
+        difference: 0,
+        status: 'closed' as const
+      };
+      
+      // Sync to Firebase directly before signing out
+      if (auth.currentUser) {
+        const uid = auth.currentUser.uid;
+        try {
+          await setDoc(doc(db, 'stores', uid, 'cashRegisters', closedRegister.id), JSON.parse(JSON.stringify(closedRegister)));
+        } catch (e) {
+          console.error('Failed to auto-close register on sidebar logout:', e);
+        }
+      }
+      closeRegister(currentRegister.expectedCash);
+    }
+
+    // Wait 500ms to allow all underlying sync/firebase operations to stabilize
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     try {
       await signOut(auth);
     } catch(e) {
