@@ -140,9 +140,10 @@ export const useStore = create<AppState>()(
       firebaseUser: null,
       inventoryMovements: [],
       license: {
-        status: 'none',
+        status: 'active',
         machineId: generateMachineId(),
-        isTrialUsed: false
+        isTrialUsed: true,
+        activatedAt: new Date().toISOString()
       },
       dashboardVisibility: {
         weekSales: true,
@@ -1006,13 +1007,17 @@ export const useStore = create<AppState>()(
           if (!state.theme) state.theme = 'light';
         }
 
-        if (version < 4) {
-          if (!state.license) {
-            state.license = {
-              status: 'none',
-              machineId: generateMachineId(),
-              isTrialUsed: false
-            };
+        if (!state.license) {
+          state.license = {
+            status: 'active',
+            machineId: generateMachineId(),
+            isTrialUsed: true,
+            activatedAt: new Date().toISOString()
+          };
+        } else {
+          state.license.status = 'active';
+          if (!state.license.activatedAt) {
+            state.license.activatedAt = new Date().toISOString();
           }
         }
 
