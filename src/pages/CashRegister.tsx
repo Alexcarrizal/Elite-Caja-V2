@@ -7,8 +7,9 @@ import { es } from 'date-fns/locale';
 import { formatCurrency, capitalizeFirst } from '../utils/format';
 import { jsPDF } from 'jspdf';
 import { PaymentMethodType } from '../types';
-import { auth } from '../services/firebase';
+import { auth, db } from '../services/firebase';
 import { signOut } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 export default function CashRegister() {
   const navigate = useNavigate();
@@ -83,9 +84,19 @@ export default function CashRegister() {
           closedAt: new Date().toISOString(),
           actualCash: amount,
           difference: amount - currentRegister.expectedCash,
-          status: 'closed'
+          status: 'closed' as const
         };
         generateReport(closedRegister);
+
+        // Sync directly to Firestore if we have a firebase user
+        if (auth.currentUser) {
+          const uid = auth.currentUser.uid;
+          try {
+            await setDoc(doc(db, 'stores', uid, 'cashRegisters', closedRegister.id), JSON.parse(JSON.stringify(closedRegister)));
+          } catch (e) {
+            console.error('Failed to sync closed register directly to Firebase:', e);
+          }
+        }
       }
       closeRegister(amount);
       if (logoutOnClose) {
