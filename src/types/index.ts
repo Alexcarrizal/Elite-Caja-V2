@@ -175,4 +175,5 @@ export interface License {
   machineId: string;
   isTrialUsed: boolean;
   cloudEmail?: string;
+  licenseKey?: string;
 }

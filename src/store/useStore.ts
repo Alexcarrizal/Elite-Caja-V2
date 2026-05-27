@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { BusinessSettings, Product, CartItem, Sale, CashRegister, User, InventoryMovement, Customer, Supplier, Remission, License, PaymentMethodType, CashMovement, SuspendedSale } from '../types';
 
 import { type User as FirebaseUser } from 'firebase/auth';
+import { generateLicenseKey, validateLicense } from '../utils/license';
 
 interface AppState {
   settings: BusinessSettings;
@@ -75,6 +76,7 @@ interface AppState {
   // License Actions
   activateTrial: () => { success: boolean; message: string };
   activateCloudLicense: (email: string) => void;
+  activateLicenseWithKey: (key: string, email: string) => { success: boolean; message: string };
   checkLicense: () => void;
   regenerateMachineId: () => void;
   forceTrialActivation: () => { success: boolean; message: string };
@@ -140,10 +142,9 @@ export const useStore = create<AppState>()(
       firebaseUser: null,
       inventoryMovements: [],
       license: {
-        status: 'active',
+        status: 'trial',
         machineId: generateMachineId(),
-        isTrialUsed: true,
-        activatedAt: new Date().toISOString()
+        isTrialUsed: false,
       },
       dashboardVisibility: {
         weekSales: true,
@@ -870,13 +871,8 @@ export const useStore = create<AppState>()(
       activateTrial: () => {
         const state = get();
         
-        if (state.license.isTrialUsed) {
-          return { success: false, message: 'El periodo de prueba ya fue utilizado en esta computadora.' };
-        }
-
         const startDate = new Date();
-        const endDate = new Date();
-        endDate.setDate(startDate.getDate() + 5);
+        const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // 30 minutes
 
         const newLicense: License = {
           ...state.license,
@@ -887,7 +883,7 @@ export const useStore = create<AppState>()(
         };
 
         set({ license: newLicense });
-        return { success: true, message: 'Prueba de 5 días activada correctamente.' };
+        return { success: true, message: 'Prueba demo de 30 minutos iniciada correctamente.' };
       },
 
       activateCloudLicense: (email: string) => {
@@ -902,11 +898,30 @@ export const useStore = create<AppState>()(
         });
       },
 
+      activateLicenseWithKey: (key: string, email: string) => {
+        const cleanEmail = email.toLowerCase().trim();
+        const expectedKey = generateLicenseKey(cleanEmail);
+        
+        if (key.trim() === expectedKey) {
+          set((state) => ({
+            license: {
+              ...state.license,
+              status: 'active',
+              activatedAt: new Date().toISOString(),
+              cloudEmail: cleanEmail,
+              licenseKey: key.trim()
+            }
+          }));
+          return { success: true, message: `¡Licencia activada con éxito para ${cleanEmail}!` };
+        } else {
+          return { success: false, message: `La clave de licencia introducida no coincide con el correo ${cleanEmail}.` };
+        }
+      },
+
       forceTrialActivation: () => {
         const state = get();
         const startDate = new Date();
-        const endDate = new Date();
-        endDate.setDate(startDate.getDate() + 5);
+        const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // 30 minutes
 
         const newLicense: License = {
           ...state.license,
@@ -918,13 +933,78 @@ export const useStore = create<AppState>()(
         };
 
         set({ license: newLicense });
-        return { success: true, message: 'Prueba de 5 días re-activada correctamente.' };
+        return { success: true, message: 'Prueba demo de 30 minutos re-activada correctamente.' };
       },
 
       checkLicense: () => {
         const state = get();
+        const now = new Date();
+        
+        // If they had 'active' status but no licenseKey, force them to start the 30-min demo trial!
+        if (state.license.status === 'active' && !state.license.licenseKey) {
+          const startDate = new Date();
+          const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // 30 minutes
+          set({
+            license: {
+              status: 'trial',
+              machineId: state.license.machineId || generateMachineId(),
+              trialStartDate: startDate.toISOString(),
+              trialEndDate: endDate.toISOString(),
+              isTrialUsed: true
+            }
+          });
+          return;
+        }
+
+        // If status is none or no trialEndDate, setup the 30-minute trial
+        if (state.license.status === 'none' || !state.license.trialEndDate) {
+          const startDate = new Date();
+          const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // 30 minutes
+          set({
+            license: {
+              ...state.license,
+              status: 'trial',
+              trialStartDate: startDate.toISOString(),
+              trialEndDate: endDate.toISOString(),
+              isTrialUsed: true
+            }
+          });
+          return;
+        }
+
+        // If it's active, we validate it matches the logged-in Google user and is correct
+        if (state.license.status === 'active') {
+          const firebaseUser = state.firebaseUser;
+          // Validate if they are logged in
+          if (firebaseUser?.email && state.license.cloudEmail) {
+            const currentEmail = firebaseUser.email.toLowerCase().trim();
+            const licenseEmail = state.license.cloudEmail.toLowerCase().trim();
+            if (currentEmail !== licenseEmail) {
+              set({
+                license: {
+                  ...state.license,
+                  status: 'expired'
+                }
+              });
+              return;
+            }
+          }
+          // Validate the key itself matches
+          if (state.license.cloudEmail && state.license.licenseKey) {
+            const expectedKey = generateLicenseKey(state.license.cloudEmail);
+            if (state.license.licenseKey !== expectedKey) {
+              set({
+                license: {
+                  ...state.license,
+                  status: 'expired'
+                }
+              });
+              return;
+            }
+          }
+        }
+
         if (state.license.status === 'trial' && state.license.trialEndDate) {
-          const now = new Date();
           const endDate = new Date(state.license.trialEndDate);
           if (now > endDate) {
             set({
@@ -1009,16 +1089,15 @@ export const useStore = create<AppState>()(
 
         if (!state.license) {
           state.license = {
-            status: 'active',
+            status: 'trial',
             machineId: generateMachineId(),
-            isTrialUsed: true,
-            activatedAt: new Date().toISOString()
+            isTrialUsed: false
           };
-        } else {
-          state.license.status = 'active';
-          if (!state.license.activatedAt) {
-            state.license.activatedAt = new Date().toISOString();
-          }
+        } else if (state.license.status === 'active' && !state.license.licenseKey) {
+          state.license.status = 'trial';
+          state.license.trialStartDate = undefined;
+          state.license.trialEndDate = undefined;
+          state.license.isTrialUsed = false;
         }
 
         // Version 5 migration logic (remove deterministic machine IDs)
