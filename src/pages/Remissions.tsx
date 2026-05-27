@@ -7,6 +7,7 @@ import { formatCurrency } from '../utils/format';
 import { Remission, RemissionItem } from '../types';
 import { jsPDF } from 'jspdf';
 import { useNavigate } from 'react-router-dom';
+import { generateRemissionPDF } from '../utils/pdf';
 
 export default function Remissions() {
   const { 
@@ -68,7 +69,7 @@ export default function Remissions() {
     setItems(items.filter(item => item.id !== id));
   };
 
-  const handleSaveRemission = () => {
+  const handleSaveRemission = (downloadPdf = true) => {
     if (items.length === 0) {
       alert('Agrega al menos un artículo a la nota de remisión.');
       return;
@@ -88,6 +89,11 @@ export default function Remissions() {
     };
 
     addRemission(newRemission);
+
+    if (downloadPdf) {
+      generateRemissionPDF(newRemission, settings);
+    }
+
     setIsCreating(false);
     setCustomerName('');
     setNotes('');
@@ -95,95 +101,7 @@ export default function Remissions() {
   };
 
   const handlePrintRemission = (remission: Remission) => {
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: [80, 297]
-    });
-
-    let y = 10;
-    const margin = 5;
-    const width = 70;
-
-    // Header
-    // Logo removed for EliteCaja
-    
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text(settings.name, width / 2 + margin, y, { align: 'center' });
-    y += 6;
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text('NOTA DE REMISIÓN', width / 2 + margin, y, { align: 'center' });
-    y += 6;
-
-    doc.setFontSize(8);
-    doc.text(`Folio: ${remission.folio}`, margin, y);
-    y += 4;
-    doc.text(`Fecha: ${format(new Date(remission.date), 'dd/MM/yyyy HH:mm')}`, margin, y);
-    y += 4;
-    doc.text(`Cliente: ${remission.customerName}`, margin, y);
-    y += 6;
-
-    doc.line(margin, y, width + margin, y);
-    y += 4;
-
-    // Items
-    doc.setFont('helvetica', 'bold');
-    doc.text('Cant', margin, y);
-    doc.text('Descripción', margin + 10, y);
-    doc.text('Total', width + margin, y, { align: 'right' });
-    y += 4;
-    doc.setFont('helvetica', 'normal');
-
-    remission.items.forEach(item => {
-      doc.text(item.quantity.toString(), margin, y);
-      
-      const descLines = doc.splitTextToSize(item.description, 40);
-      doc.text(descLines, margin + 10, y);
-      
-      doc.text(
-        formatCurrency(item.total, settings.currency),
-        width + margin,
-        y,
-        { align: 'right' }
-      );
-      
-      y += (descLines.length * 4);
-    });
-
-    y += 2;
-    doc.line(margin, y, width + margin, y);
-    y += 6;
-
-    // Total
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('TOTAL:', margin, y);
-    doc.text(
-      formatCurrency(remission.total, settings.currency),
-      width + margin,
-      y,
-      { align: 'right' }
-    );
-    y += 8;
-
-    if (remission.notes) {
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Notas:', margin, y);
-      y += 4;
-      const noteLines = doc.splitTextToSize(remission.notes, width);
-      doc.text(noteLines, margin, y);
-      y += (noteLines.length * 4) + 4;
-    }
-
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'italic');
-    doc.text('Este documento no tiene validez fiscal.', width / 2 + margin, y, { align: 'center' });
-
-    doc.save(`Remision_${remission.folio}.pdf`);
+    generateRemissionPDF(remission, settings);
   };
 
   if (isCreating) {
@@ -199,12 +117,21 @@ export default function Remissions() {
             </button>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Nueva Nota de Remisión</h1>
           </div>
-          <button
-            onClick={handleSaveRemission}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors shadow-sm shadow-blue-200 dark:shadow-none"
-          >
-            Guardar Remisión
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handleSaveRemission(false)}
+              className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-colors text-sm"
+            >
+              Solo Guardar
+            </button>
+            <button
+              onClick={() => handleSaveRemission(true)}
+              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors shadow-sm shadow-blue-200 dark:shadow-none flex items-center gap-2 text-sm"
+            >
+              <FileText className="w-4 h-4" />
+              Guardar y Descargar PDF
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

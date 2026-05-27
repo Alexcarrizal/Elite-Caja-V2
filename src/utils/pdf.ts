@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Sale, BusinessSettings } from '../types';
+import { Sale, BusinessSettings, Remission } from '../types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { formatCurrency } from './format';
@@ -162,4 +162,137 @@ export const generateReceiptPDF = (sale: Sale, settings: BusinessSettings) => {
   drawReceipt(halfHeight, 'COPIA VENDEDOR');
 
   doc.save(`Nota_Remision_${sale.id}.pdf`);
+};
+
+export const generateRemissionPDF = (remission: Remission, settings: BusinessSettings) => {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'letter',
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const halfHeight = pageHeight / 2;
+
+  // Draw cut line
+  doc.setLineDashPattern([5, 5], 0);
+  doc.setLineWidth(0.5);
+  doc.setDrawColor(150, 150, 150);
+  doc.line(10, halfHeight, pageWidth - 10, halfHeight);
+  doc.setLineDashPattern([], 0); // Reset
+
+  // Add scissors icon or text
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text('✂--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------', 10, halfHeight + 1);
+
+  const drawReceipt = (startY: number, title: string) => {
+    let yPos = startY + 15;
+    const margin = 20;
+    const contentWidth = pageWidth - (margin * 2);
+
+    // Header Background
+    doc.setFillColor(245, 247, 250);
+    doc.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'F');
+
+    // Business Info
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(settings.name || 'EliteCaja', margin + 5, yPos + 12);
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    let infoY = yPos + 18;
+    if (settings.legalName) { doc.text(settings.legalName, margin + 5, infoY); infoY += 4; }
+    if (settings.rfc) { doc.text(`RFC: ${settings.rfc}`, margin + 5, infoY); infoY += 4; }
+    if (settings.address) { doc.text(settings.address, margin + 5, infoY); infoY += 4; }
+    if (settings.phone) { doc.text(`Tel: ${settings.phone}`, margin + 5, infoY); }
+
+    // Receipt Title & Info (Right aligned)
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text('NOTA DE REMISIÓN', pageWidth - margin - 5, yPos + 12, { align: 'right' });
+    
+    doc.setFontSize(10);
+    doc.setTextColor(59, 130, 246); // Blue
+    doc.text(title, pageWidth - margin - 5, yPos + 18, { align: 'right' });
+
+    doc.setFontSize(9);
+    doc.setTextColor(71, 85, 105);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Folio: #${remission.folio}`, pageWidth - margin - 5, yPos + 24, { align: 'right' });
+    doc.text(`Fecha: ${format(new Date(remission.date), 'dd/MM/yyyy HH:mm', { locale: es })}`, pageWidth - margin - 5, yPos + 29, { align: 'right' });
+    if (remission.customerName) {
+      doc.text(`Cliente: ${remission.customerName}`, pageWidth - margin - 5, yPos + 34, { align: 'right' });
+    }
+
+    yPos += 45;
+
+    // Items Table
+    const tableData = remission.items.map(item => {
+      return [
+        item.quantity.toString(),
+        item.description,
+        formatCurrency(item.unitPrice, settings.currency),
+        formatCurrency(item.total, settings.currency)
+      ];
+    });
+
+    autoTable(doc, {
+      startY: yPos,
+      head: [['Cant.', 'Descripción', 'Precio Unit.', 'Importe']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 9, cellPadding: 3 },
+      columnStyles: {
+        0: { cellWidth: 15, halign: 'center' },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 30, halign: 'right' },
+        3: { cellWidth: 30, halign: 'right' },
+      },
+      margin: { left: margin, right: margin }
+    });
+
+    yPos = (doc as any).lastAutoTable.finalY + 10;
+
+    // Totals Box
+    const totalsX = pageWidth - margin - 60;
+    
+    // Notes if present on the left
+    if (remission.notes) {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 116, 139);
+      doc.text('Notas / Condiciones:', margin, yPos);
+      const noteLines = doc.splitTextToSize(remission.notes, totalsX - margin - 10);
+      doc.text(noteLines, margin, yPos + 5);
+    }
+
+    // Total Background
+    doc.setFillColor(59, 130, 246);
+    doc.roundedRect(totalsX - 5, yPos - 4, 65 + 5, 10, 2, 2, 'F');
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text('TOTAL:', totalsX, yPos + 3);
+    doc.text(formatCurrency(remission.total, settings.currency), pageWidth - margin - 2, yPos + 3, { align: 'right' });
+
+    // Footer
+    yPos += 15;
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Este documento no tiene validez fiscal.', pageWidth / 2, yPos, { align: 'center' });
+  };
+
+  drawReceipt(0, 'COPIA CLIENTE');
+  drawReceipt(halfHeight, 'COPIA VENDEDOR');
+
+  doc.save(`Nota_Remision_${remission.folio}.pdf`);
 };
