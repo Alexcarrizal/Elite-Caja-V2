@@ -168,10 +168,10 @@ export default function Dashboard() {
   }, [cashRegisters]);
 
   const weekSalesTotal = weekSales.reduce((sum, s) => sum + s.total, 0);
-  const weekTotal = weekSalesTotal + weekExtraIncome - weekWithdrawals;
+  const weekTotal = weekSalesTotal + weekExtraIncome;
 
   const monthSalesTotal = monthSales.reduce((sum, s) => sum + s.total, 0);
-  const monthTotal = monthSalesTotal + monthExtraIncome - monthWithdrawals;
+  const monthTotal = monthSalesTotal + monthExtraIncome;
   
   const todayProductCost = useMemo(() => {
     return todaySales.reduce((sum, s) => {
@@ -378,7 +378,7 @@ export default function Dashboard() {
           </div>
           <p className="text-xs font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">VENTAS DE HOY</p>
           <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white mt-1.5">
-            {dashboardVisibility?.todaySales !== false ? formatCurrency(todayTotal + todayExtraIncome - todayWithdrawals, settings?.currency) : '••••••'}
+            {dashboardVisibility?.todaySales !== false ? formatCurrency(todayTotal + todayExtraIncome, settings?.currency) : '••••••'}
           </h3>
         </motion.div>
 
