@@ -31,15 +31,17 @@ export default function CashRegister() {
 
   // Calculate profit of the day
   const today = new Date().toDateString();
-  const salesToday = sales.filter(s => new Date(s.date).toDateString() === today);
+  const salesToday = currentRegister 
+    ? sales.filter(s => {
+        const saleDate = new Date(s.date);
+        const openDate = new Date(currentRegister.openedAt);
+        return saleDate >= openDate;
+      })
+    : [];
   
-  const todayExtraIncome = cashRegisters
-    .filter(r => new Date(r.openedAt).toDateString() === today)
-    .reduce((sum, r) => sum + (r.extraIncome || 0), 0);
+  const todayExtraIncome = currentRegister ? (currentRegister.extraIncome || 0) : 0;
 
-  const todayWithdrawals = cashRegisters
-    .filter(r => new Date(r.openedAt).toDateString() === today)
-    .reduce((sum, r) => sum + (r.withdrawals || 0), 0);
+  const todayWithdrawals = currentRegister ? (currentRegister.withdrawals || 0) : 0;
 
   const profitToday = salesToday.reduce((totalProfit, sale) => {
     const saleProfit = sale.items.reduce((itemProfit, item) => {
