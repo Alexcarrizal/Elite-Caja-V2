@@ -469,6 +469,16 @@ export default function Dashboard() {
         <div className="flex flex-wrap gap-3">
           <button 
             onClick={() => {
+              navigate('/pos');
+            }}
+            className="flex items-center justify-center gap-2 py-2 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md shadow-indigo-200 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] min-w-[160px]"
+          >
+            <ShoppingCart className="w-5 h-5" />
+            <span className="font-bold">Venta</span>
+          </button>
+
+          <button 
+            onClick={() => {
               setAdjustmentType('entrada');
               setIsAdjustmentModalOpen(true);
             }}
