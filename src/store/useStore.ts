@@ -620,6 +620,19 @@ export const useStore = create<AppState>()(
       })),
 
       openRegister: (initialAmount) => set((state) => {
+        const cleanedRegisters = state.cashRegisters.map((r) => {
+          if (r.status === 'open') {
+            return {
+              ...r,
+              closedAt: new Date().toISOString(),
+              status: 'closed' as const,
+              actualCash: r.expectedCash,
+              difference: 0
+            };
+          }
+          return r;
+        });
+
         const newRegister: CashRegister = {
           id: Math.random().toString(36).substr(2, 9),
           openedAt: new Date().toISOString(),
@@ -635,23 +648,29 @@ export const useStore = create<AppState>()(
           expectedCash: initialAmount,
           status: 'open',
         };
-        return { cashRegisters: [...state.cashRegisters, newRegister] };
+        return { cashRegisters: [...cleanedRegisters, newRegister] };
       }),
 
       closeRegister: (actualCash) => set((state) => {
-        const currentRegister = state.cashRegisters.find((r) => r.status === 'open');
-        if (!currentRegister) return state;
+        const openRegisters = state.cashRegisters.filter((r) => r.status === 'open');
+        if (openRegisters.length === 0) return state;
 
-        const updatedRegister: CashRegister = {
-          ...currentRegister,
-          closedAt: new Date().toISOString(),
-          actualCash,
-          difference: actualCash - currentRegister.expectedCash,
-          status: 'closed',
-        };
+        const closedAt = new Date().toISOString();
+        const updatedRegisters = state.cashRegisters.map((r) => {
+          if (r.status === 'open') {
+            return {
+              ...r,
+              closedAt,
+              actualCash,
+              difference: actualCash - r.expectedCash,
+              status: 'closed' as const,
+            };
+          }
+          return r;
+        });
 
         return {
-          cashRegisters: state.cashRegisters.map((r) => r.id === currentRegister.id ? updatedRegister : r),
+          cashRegisters: updatedRegisters,
         };
       }),
 
